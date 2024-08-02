@@ -26,17 +26,17 @@ const App = () => {
   const [showAuthOptions, setShowAuthOptions] = useState(false);
   const [score, setScore] = useState(0);
   const [totalAttempts, setTotalAttempts] = useState(0);
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [groups, setGroups] = useState([]);
+  const [selectedGroup, setSelectedGroup] = useState('all');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [hasVoted, setHasVoted] = useState(false);
 
   useEffect(() => {
-    const uniqueCategories = [...new Set(conceptsData.concepts.map(c => c.category))];
-    setCategories(['all', ...uniqueCategories]);
-    filterConceptsByCategory('all');
+    const uniqueGroups = ['all', ...new Set(conceptsData.concepts.map(c => c.group))];
+    setGroups(uniqueGroups);
+    filterConceptsByGroup('all');
 
     const handleOnline = () => {
       setIsOnline(true);
@@ -66,18 +66,18 @@ const App = () => {
     };
   }, []);
 
-  const filterConceptsByCategory = (category) => {
-    const filteredConcepts = category === 'all' 
+  const filterConceptsByGroup = (group) => {
+    const filteredConcepts = group === 'all' 
       ? conceptsData.concepts 
-      : conceptsData.concepts.filter(c => c.category === category);
+      : conceptsData.concepts.filter(c => c.group === group);
     setConcepts(shuffleArray(filteredConcepts));
     setCurrentConceptIndex(0);
     setIsFlipped(false);
   };
 
-  const handleCategoryChange = (event) => {
-    setSelectedCategory(event.target.value);
-    filterConceptsByCategory(event.target.value);
+  const handleGroupChange = (event) => {
+    setSelectedGroup(event.target.value);
+    filterConceptsByGroup(event.target.value);
   };
 
   const loadUserScore = async (userId) => {
@@ -185,19 +185,19 @@ const App = () => {
             Memory Card
           </Typography>
           <Box sx={{ minWidth: 120, mr: 2 }}>
-            <Select
-              value={selectedCategory}
-              onChange={handleCategoryChange}
+          <Select
+              value={selectedGroup}
+              onChange={handleGroupChange}
               displayEmpty
               inputProps={{ 'aria-label': 'Without label' }}
               sx={{ color: 'white', '& .MuiSelect-icon': { color: 'white' } }}
             >
               <MenuItem value="" disabled>
-                Category
+                Group
               </MenuItem>
-              {categories.map((category) => (
-                <MenuItem key={category} value={category}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
+              {groups.map((group) => (
+                <MenuItem key={group} value={group}>
+                  {group.charAt(0).toUpperCase() + group.slice(1)}
                 </MenuItem>
               ))}
             </Select>
@@ -230,25 +230,35 @@ const App = () => {
                   onClick={() => handleScoreUpdate(true)} 
                   aria-label="Remembered"
                   disabled={hasVoted}
+                  sx={{ fontSize: '2rem' }}
                 >
-                  <ThumbUpIcon />
+                  <ThumbUpIcon fontSize="inherit" />
                 </IconButton>
                 <IconButton 
                   color="error" 
                   onClick={() => handleScoreUpdate(false)} 
                   aria-label="Didn't remember"
                   disabled={hasVoted}
+                  sx={{ fontSize: '2rem' }}
                 >
-                  <ThumbDownIcon />
+                  <ThumbDownIcon fontSize="inherit" />
                 </IconButton>
               </Box>
             </Box>
             <ScoreDisplay score={score} totalAttempts={totalAttempts} />
-            <Box mt={2} mb={2}>
-              <LinearProgress variant="determinate" value={(currentConceptIndex + 1) / concepts.length * 100} />
-              <Typography variant="body2" color="text.secondary" align="center">
-                {`${currentConceptIndex + 1} / ${concepts.length}`}
-              </Typography>
+            <Box mt={2} mb={2} sx={{ position: 'relative', height: '4px', backgroundColor: '#e0e0e0', borderRadius: '2px' }}>
+              <Box
+                sx={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  height: '100%',
+                  backgroundColor: '#2196f3',
+                  borderRadius: '2px',
+                  transition: 'width 0.5s ease',
+                  width: `${((currentConceptIndex + 1) / concepts.length) * 100}%`,
+                }}
+              />
             </Box>
           </>
         )}
