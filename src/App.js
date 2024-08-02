@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Button, Box, Typography, AppBar, Toolbar, LinearProgress, Select, MenuItem, IconButton } from '@mui/material';
+import { Container, Button, Box, Typography, AppBar, Toolbar, LinearProgress, Select, MenuItem, IconButton, Snackbar } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut } from 'firebase/auth';
@@ -28,11 +28,29 @@ const App = () => {
   const [totalAttempts, setTotalAttempts] = useState(0);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState('');
+  const [hasVoted, setHasVoted] = useState(false);
 
   useEffect(() => {
     const uniqueCategories = [...new Set(conceptsData.concepts.map(c => c.category))];
     setCategories(['all', ...uniqueCategories]);
     filterConceptsByCategory('all');
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      setSnackbarMessage('You are back online');
+      setSnackbarOpen(true);
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setSnackbarMessage('You are offline. Changes will be saved when you reconnect.');
+      setSnackbarOpen(true);
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -40,7 +58,12 @@ const App = () => {
         loadUserScore(currentUser.uid);
       }
     });
-    return () => unsubscribe();
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+      unsubscribe();
+    };
   }, []);
 
   const filterConceptsByCategory = (category) => {
@@ -58,25 +81,42 @@ const App = () => {
   };
 
   const loadUserScore = async (userId) => {
-    const userDocRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userDocRef);
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      setScore(userData.score || 0);
-      setTotalAttempts(userData.totalAttempts || 0);
+    try {
+      const userDocRef = doc(db, 'users', userId);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        setScore(userData.score || 0);
+        setTotalAttempts(userData.totalAttempts || 0);
+      }
+    } catch (error) {
+      console.error("Error loading user score:", error);
+      setSnackbarMessage('Failed to load score. Please try again later.');
+      setSnackbarOpen(true);
     }
   };
 
   const saveUserScore = async () => {
     if (user) {
-      const userDocRef = doc(db, 'users', user.uid);
-      await setDoc(userDocRef, { score, totalAttempts }, { merge: true });
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        await setDoc(userDocRef, { score, totalAttempts }, { merge: true });
+      } catch (error) {
+        console.error("Error saving user score:", error);
+        if (!isOnline) {
+          setSnackbarMessage('You are offline. Score will be saved when you reconnect.');
+        } else {
+          setSnackbarMessage('Failed to save score. Please try again later.');
+        }
+        setSnackbarOpen(true);
+      }
     }
   };
 
   const handleNextCard = () => {
     setCurrentConceptIndex((prevIndex) => (prevIndex + 1) % concepts.length);
     setIsFlipped(false);
+    setHasVoted(false);
   };
 
   const handleShuffleCards = () => {
@@ -90,9 +130,14 @@ const App = () => {
   };
 
   const handleScoreUpdate = (remembered) => {
-    setScore(prevScore => remembered ? prevScore + 1 : prevScore);
-    setTotalAttempts(prevAttempts => prevAttempts + 1);
-    saveUserScore();
+    if (!hasVoted) {
+      setScore(prevScore => remembered ? prevScore + 1 : prevScore);
+      setTotalAttempts(prevAttempts => prevAttempts + 1);
+      saveUserScore();
+      setHasVoted(true);
+      // Esperar un momento antes de pasar a la siguiente tarjeta
+      setTimeout(handleNextCard, 500);
+    }
   };
 
   const handleGoogleSignIn = async () => {
@@ -101,6 +146,8 @@ const App = () => {
       await signInWithPopup(auth, provider);
     } catch (error) {
       console.error("Error during Google sign in:", error);
+      setSnackbarMessage('Failed to sign in with Google. Please try again.');
+      setSnackbarOpen(true);
     }
   };
 
@@ -109,6 +156,8 @@ const App = () => {
       await signInAnonymously(auth);
     } catch (error) {
       console.error("Error during anonymous sign in:", error);
+      setSnackbarMessage('Failed to sign in anonymously. Please try again.');
+      setSnackbarOpen(true);
     }
   };
 
@@ -119,6 +168,8 @@ const App = () => {
       setTotalAttempts(0);
     } catch (error) {
       console.error("Error signing out:", error);
+      setSnackbarMessage('Failed to sign out. Please try again.');
+      setSnackbarOpen(true);
     }
   };
 
@@ -174,10 +225,20 @@ const App = () => {
                 onFlip={handleFlip}
               />
               <Box display="flex" justifyContent="center" gap={2} mt={2}>
-                <IconButton color="success" onClick={() => handleScoreUpdate(true)} aria-label="Remembered">
+                <IconButton 
+                  color="success" 
+                  onClick={() => handleScoreUpdate(true)} 
+                  aria-label="Remembered"
+                  disabled={hasVoted}
+                >
                   <ThumbUpIcon />
                 </IconButton>
-                <IconButton color="error" onClick={() => handleScoreUpdate(false)} aria-label="Didn't remember">
+                <IconButton 
+                  color="error" 
+                  onClick={() => handleScoreUpdate(false)} 
+                  aria-label="Didn't remember"
+                  disabled={hasVoted}
+                >
                   <ThumbDownIcon />
                 </IconButton>
               </Box>
@@ -222,6 +283,13 @@ const App = () => {
             )}
           </Box>
         )}
+        <Snackbar
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={() => setSnackbarOpen(false)}
+          message={snackbarMessage}
+        />
       </Container>
     </>
   );

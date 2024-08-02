@@ -10,6 +10,7 @@ const MemoryCard = ({ concept, explanation, isFlipped, onFlip }) => {
         height: 200,
         perspective: '1000px',
         cursor: 'pointer',
+        boxShadow: 'none', // Eliminamos la sombra que puede causar la apariencia de borde
         '& > div': {
           transition: 'transform 0.6s',
           transformStyle: 'preserve-3d',
@@ -32,6 +33,7 @@ const MemoryCard = ({ concept, explanation, isFlipped, onFlip }) => {
           justifyContent: 'center',
           backgroundColor: '#3498db',
           color: 'white',
+          borderRadius: '4px', // Aseguramos que los bordes sean redondeados
         }}>
           <Typography variant="h5">{concept}</Typography>
         </CardContent>
@@ -46,6 +48,7 @@ const MemoryCard = ({ concept, explanation, isFlipped, onFlip }) => {
           backgroundColor: '#2ecc71',
           color: 'white',
           transform: 'rotateY(180deg)',
+          borderRadius: '4px', // Aseguramos que los bordes sean redondeados
         }}>
           <Typography variant="body1">{explanation}</Typography>
         </CardContent>
