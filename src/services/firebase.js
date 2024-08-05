@@ -8,12 +8,12 @@ import { persistentLocalCache, persistentMultipleTabManager } from 'firebase/fir
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyD9D9el_Y-B1avd4OiYc3OF-L4R2Ttoeo0",
-  authDomain: "memory-card-944f2.firebaseapp.com",
-  projectId: "memory-card-944f2",
-  storageBucket: "memory-card-944f2.appspot.com",
-  messagingSenderId: "415342274871",
-  appId: "1:415342274871:web:694bf31a1cd8501e2a92b2"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
