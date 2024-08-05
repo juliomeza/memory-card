@@ -1,87 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, CircularProgress, Box, Snackbar, Typography } from '@mui/material';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { auth, db } from './services/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
-import { initializeUserProgress, updateUserProgress } from './services/userProgressManager';
+import { auth } from './services/firebase';
+import { initializeUserProgress, updateUserProgress, getUserProgress } from './services/userProgressManager';
 import Header from './components/Header';
 import MemoryCardGame from './components/MemoryCardGame';
 import Login from './components/Login';
-
-const shuffleArray = (array) => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
+import ConceptFilter from './components/ConceptFilter';
+import { useConcepts } from './hooks/useConcepts';
 
 const App = () => {
-  const [concepts, setConcepts] = useState([]);
-  const [currentConceptIndex, setCurrentConceptIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
   const [user, setUser] = useState(null);
-  const [groups, setGroups] = useState([]);
-  const [selectedGroup, setSelectedGroup] = useState('all');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [hasVoted, setHasVoted] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [currentConceptIndex, setCurrentConceptIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [conceptFilter, setConceptFilter] = useState('all');
+  const [userProgress, setUserProgress] = useState(null);
 
-  const loadGroupsAndConcepts = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const conceptsRef = collection(db, 'concepts');
-      const conceptsSnapshot = await getDocs(conceptsRef);
-      const conceptsData = conceptsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      
-      const uniqueGroups = ['all', ...new Set(conceptsData.map(c => c.group))];
-      setGroups(uniqueGroups);
-      
-      setConcepts(shuffleArray(conceptsData));
-    } catch (error) {
-      console.error("Error loading concepts from Firestore:", error);
-      setSnackbarMessage('Failed to load concepts. Please try again later.');
-      setSnackbarOpen(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const filterConceptsByGroup = useCallback(async (group) => {
-    setIsLoading(true);
-    try {
-      const conceptsRef = collection(db, 'concepts');
-      let querySnapshot;
-
-      if (group === 'all') {
-        querySnapshot = await getDocs(conceptsRef);
-      } else {
-        const q = query(conceptsRef, where("group", "==", group));
-        querySnapshot = await getDocs(q);
-      }
-
-      const filteredConcepts = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-
-      setConcepts(shuffleArray(filteredConcepts));
-      setCurrentConceptIndex(0);
-      setIsFlipped(false);
-    } catch (error) {
-      console.error("Error filtering concepts:", error);
-      setSnackbarMessage('Failed to filter concepts. Please try again.');
-      setSnackbarOpen(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const { concepts, isLoading, error } = useConcepts(user, conceptFilter);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -102,34 +41,19 @@ const App = () => {
       setUser(currentUser);
       if (currentUser) {
         await initializeUserProgress(currentUser.uid);
+        const progress = await getUserProgress(currentUser.uid);
+        setUserProgress(progress);
+      } else {
+        setUserProgress(null);
       }
     });
-
-    loadGroupsAndConcepts();
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       unsubscribe();
     };
-  }, [loadGroupsAndConcepts]);
-
-  const handleGroupChange = useCallback((event) => {
-    setSelectedGroup(event.target.value);
-    filterConceptsByGroup(event.target.value);
-  }, [filterConceptsByGroup]);
-
-  const handleNextCard = useCallback(() => {
-    setCurrentConceptIndex((prevIndex) => (prevIndex + 1) % concepts.length);
-    setIsFlipped(false);
-    setHasVoted(false);
-  }, [concepts.length]);
-
-  const handleShuffleCards = useCallback(() => {
-    setConcepts(shuffleArray([...concepts]));
-    setCurrentConceptIndex(0);
-    setIsFlipped(false);
-  }, [concepts]);
+  }, []);
 
   const handleFlip = useCallback(() => {
     setIsFlipped(prev => !prev);
@@ -138,10 +62,16 @@ const App = () => {
   const handleScoreUpdate = useCallback(async (remembered) => {
     if (!hasVoted && user) {
       await updateUserProgress(user.uid, concepts[currentConceptIndex].id, remembered);
+      const updatedProgress = await getUserProgress(user.uid);
+      setUserProgress(updatedProgress);
       setHasVoted(true);
-      setTimeout(handleNextCard, 500);
+      setTimeout(() => {
+        setCurrentConceptIndex((prevIndex) => (prevIndex + 1) % concepts.length);
+        setIsFlipped(false);
+        setHasVoted(false);
+      }, 500);
     }
-  }, [user, hasVoted, concepts, currentConceptIndex, handleNextCard]);
+  }, [user, hasVoted, concepts, currentConceptIndex]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -153,6 +83,13 @@ const App = () => {
     }
   }, []);
 
+  const handleConceptFilterChange = (event, newFilter) => {
+    if (newFilter !== null) {
+      setConceptFilter(newFilter);
+      setCurrentConceptIndex(0);
+    }
+  };
+
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
@@ -163,32 +100,30 @@ const App = () => {
 
   return (
     <>
-      <Header 
-        user={user}
-        selectedGroup={selectedGroup}
-        groups={groups}
-        onGroupChange={handleGroupChange}
-        onSignOut={handleSignOut}
-      />
+      <Header user={user} onSignOut={handleSignOut} />
       <Container maxWidth="sm" sx={{ mt: 4 }}>
         {user ? (
-          concepts.length > 0 ? (
-            <MemoryCardGame 
-              currentConcept={concepts[currentConceptIndex]}
-              isFlipped={isFlipped}
-              onFlip={handleFlip}
-              hasVoted={hasVoted}
-              onScoreUpdate={handleScoreUpdate}
-              currentIndex={currentConceptIndex}
-              totalConcepts={concepts.length}
-              onNextCard={handleNextCard}
-              onShuffleCards={handleShuffleCards}
+          <>
+            <ConceptFilter
+              conceptFilter={conceptFilter}
+              onConceptFilterChange={handleConceptFilterChange}
             />
-          ) : (
-            <Typography variant="h6" align="center" my={4}>
-              No concepts available for this group.
-            </Typography>
-          )
+            {concepts.length > 0 ? (
+              <MemoryCardGame 
+                currentConcept={concepts[currentConceptIndex]}
+                isFlipped={isFlipped}
+                onFlip={handleFlip}
+                hasVoted={hasVoted}
+                onScoreUpdate={handleScoreUpdate}
+                currentIndex={currentConceptIndex}
+                totalConcepts={concepts.length}
+              />
+            ) : (
+              <Typography variant="h6" align="center" my={4}>
+                No concepts available for the selected filter.
+              </Typography>
+            )}
+          </>
         ) : (
           <Login />
         )}
