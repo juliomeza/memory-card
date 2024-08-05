@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, Button, Box, Typography, AppBar, Toolbar, CircularProgress, Select, MenuItem, IconButton, Snackbar } from '@mui/material';
-import ThumbUpIcon from '@mui/icons-material/ThumbUp';
-import ThumbDownIcon from '@mui/icons-material/ThumbDown';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut } from 'firebase/auth';
+import { Container, CircularProgress, Box, Snackbar, Typography } from '@mui/material';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './services/firebase';
-import { doc, setDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import MemoryCard from './components/MemoryCard';
-import ScoreDisplay from './components/ScoreDisplay';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { initializeUserProgress, updateUserProgress, getUserProgress, getConceptPerformance } from './services/userProgressManager';
+import Header from './components/Header';
+import MemoryCardGame from './components/MemoryCardGame';
+import Login from './components/Login';
 
 const shuffleArray = (array) => {
   const shuffled = [...array];
@@ -23,7 +22,6 @@ const App = () => {
   const [currentConceptIndex, setCurrentConceptIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [user, setUser] = useState(null);
-  const [showAuthOptions, setShowAuthOptions] = useState(false);
   const [score, setScore] = useState(0);
   const [totalAttempts, setTotalAttempts] = useState(0);
   const [groups, setGroups] = useState([]);
@@ -175,27 +173,6 @@ const App = () => {
     }
   }, [user, hasVoted, concepts, currentConceptIndex, getCurrentConceptPerformance, handleNextCard]);
 
-  const handleGoogleSignIn = useCallback(async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Error during Google sign in:", error);
-      setSnackbarMessage('Failed to sign in with Google. Please try again.');
-      setSnackbarOpen(true);
-    }
-  }, []);
-
-  const handleAnonymousSignIn = useCallback(async () => {
-    try {
-      await signInAnonymously(auth);
-    } catch (error) {
-      console.error("Error during anonymous sign in:", error);
-      setSnackbarMessage('Failed to sign in anonymously. Please try again.');
-      setSnackbarOpen(true);
-    }
-  }, []);
-
   const handleSignOut = useCallback(async () => {
     try {
       await signOut(auth);
@@ -208,10 +185,6 @@ const App = () => {
     }
   }, []);
 
-  const getFirstName = useCallback((fullName) => {
-    return fullName ? fullName.split(' ')[0] : 'Usuario';
-  }, []);
-
   if (isLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
@@ -222,123 +195,37 @@ const App = () => {
 
   return (
     <>
-      <AppBar position="static">
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            Memory Card
-          </Typography>
-          <Box sx={{ minWidth: 120, mr: 2 }}>
-            <Select
-              value={selectedGroup}
-              onChange={handleGroupChange}
-              displayEmpty
-              inputProps={{ 'aria-label': 'Without label' }}
-              sx={{ color: 'white', '& .MuiSelect-icon': { color: 'white' } }}
-            >
-              <MenuItem value="" disabled>
-                Group
-              </MenuItem>
-              {groups.map((group) => (
-                <MenuItem key={group} value={group}>
-                  {group.charAt(0).toUpperCase() + group.slice(1)}
-                </MenuItem>
-              ))}
-            </Select>
-          </Box>
-          {user && (
-            <Box display="flex" alignItems="center">
-              <Typography variant="body1" sx={{ mr: 2 }}>
-                {user.isAnonymous ? "Anónimo" : getFirstName(user.displayName)}
-              </Typography>
-              <Button color="inherit" onClick={handleSignOut}>
-                Cerrar Sesión
-              </Button>
-            </Box>
-          )}
-        </Toolbar>
-      </AppBar>
+      <Header 
+        user={user}
+        selectedGroup={selectedGroup}
+        groups={groups}
+        onGroupChange={handleGroupChange}
+        onSignOut={handleSignOut}
+      />
       <Container maxWidth="sm" sx={{ mt: 4 }}>
-        {concepts.length > 0 ? (
-          <>
-            <Box display="flex" flexDirection="column" alignItems="center" my={4}>
-              <MemoryCard 
-                concept={concepts[currentConceptIndex].concept} 
-                explanation={concepts[currentConceptIndex].explanation}
-                isFlipped={isFlipped}
-                onFlip={handleFlip}
-                performance={currentConceptPerformance}
-              />
-              <Box display="flex" justifyContent="center" gap={2} mt={2}>
-                <IconButton 
-                  color="success" 
-                  onClick={() => handleScoreUpdate(true)} 
-                  aria-label="Remembered"
-                  disabled={hasVoted}
-                  sx={{ fontSize: '2rem' }}
-                >
-                  <ThumbUpIcon fontSize="inherit" />
-                </IconButton>
-                <IconButton 
-                  color="error" 
-                  onClick={() => handleScoreUpdate(false)} 
-                  aria-label="Didn't remember"
-                  disabled={hasVoted}
-                  sx={{ fontSize: '2rem' }}
-                >
-                  <ThumbDownIcon fontSize="inherit" />
-                </IconButton>
-              </Box>
-            </Box>
-            <ScoreDisplay score={score} totalAttempts={totalAttempts} />
-            <Box mt={2} mb={2} sx={{ position: 'relative', height: '4px', backgroundColor: '#e0e0e0', borderRadius: '2px' }}>
-              <Box
-                sx={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  height: '100%',
-                  backgroundColor: '#2196f3',
-                  borderRadius: '2px',
-                  transition: 'width 0.5s ease',
-                  width: `${((currentConceptIndex + 1) / concepts.length) * 100}%`,
-                }}
-              />
-            </Box>
-            <Box display="flex" justifyContent="center" gap={2} mt={2}>
-              <Button variant="contained" color="primary" onClick={handleNextCard}>
-                Next Card
-              </Button>
-              <Button variant="contained" color="secondary" onClick={handleShuffleCards}>
-                Shuffle Cards
-              </Button>
-            </Box>
-          </>
+        {user ? (
+          concepts.length > 0 ? (
+            <MemoryCardGame 
+              currentConcept={concepts[currentConceptIndex]}
+              isFlipped={isFlipped}
+              onFlip={handleFlip}
+              performance={currentConceptPerformance}
+              hasVoted={hasVoted}
+              onScoreUpdate={handleScoreUpdate}
+              score={score}
+              totalAttempts={totalAttempts}
+              currentIndex={currentConceptIndex}
+              totalConcepts={concepts.length}
+              onNextCard={handleNextCard}
+              onShuffleCards={handleShuffleCards}
+            />
+          ) : (
+            <Typography variant="h6" align="center" my={4}>
+              No concepts available for this group.
+            </Typography>
+          )
         ) : (
-          <Typography variant="h6" align="center" my={4}>
-            No concepts available for this group.
-          </Typography>
-        )}
-
-        {!user && (
-          <Box mt={4} textAlign="center">
-            {!showAuthOptions ? (
-              <Button variant="contained" color="primary" onClick={() => setShowAuthOptions(true)}>
-                Guardar Puntajes
-              </Button>
-            ) : (
-              <Box>
-                <Typography variant="body1" gutterBottom>
-                  Inicia sesión para guardar tus puntajes:
-                </Typography>
-                <Button variant="contained" color="primary" onClick={handleGoogleSignIn} sx={{ mr: 2 }}>
-                  Google
-                </Button>
-                <Button variant="contained" color="secondary" onClick={handleAnonymousSignIn}>
-                  Anónimo
-                </Button>
-              </Box>
-            )}
-          </Box>
+          <Login />
         )}
         <Snackbar
           anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
