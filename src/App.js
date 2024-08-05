@@ -4,10 +4,10 @@ import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import MemoryCard from './components/MemoryCard';
 import ScoreDisplay from './components/ScoreDisplay';
-import conceptsData from './data/concepts.json';
+
 
 const shuffleArray = (array) => {
   const shuffled = [...array];
@@ -32,12 +32,62 @@ const App = () => {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [hasVoted, setHasVoted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadGroupsAndConcepts = async () => {
+    setIsLoading(true);
+    try {
+      const conceptsRef = collection(db, 'concepts');
+      const conceptsSnapshot = await getDocs(conceptsRef);
+      const conceptsData = conceptsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      const uniqueGroups = ['all', ...new Set(conceptsData.map(c => c.group))];
+      setGroups(uniqueGroups);
+      
+      setConcepts(shuffleArray(conceptsData));
+    } catch (error) {
+      console.error("Error loading concepts from Firestore:", error);
+      setSnackbarMessage('Failed to load concepts. Please try again later.');
+      setSnackbarOpen(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const filterConceptsByGroup = async (group) => {
+    setIsLoading(true);
+    try {
+      const conceptsRef = collection(db, 'concepts');
+      let querySnapshot;
+
+      if (group === 'all') {
+        querySnapshot = await getDocs(conceptsRef);
+      } else {
+        const q = query(conceptsRef, where("group", "==", group));
+        querySnapshot = await getDocs(q);
+      }
+
+      const filteredConcepts = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+
+      setConcepts(shuffleArray(filteredConcepts));
+      setCurrentConceptIndex(0);
+      setIsFlipped(false);
+    } catch (error) {
+      console.error("Error filtering concepts:", error);
+      setSnackbarMessage('Failed to filter concepts. Please try again.');
+      setSnackbarOpen(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const uniqueGroups = ['all', ...new Set(conceptsData.concepts.map(c => c.group))];
-    setGroups(uniqueGroups);
-    filterConceptsByGroup('all');
-
     const handleOnline = () => {
       setIsOnline(true);
       setSnackbarMessage('You are back online');
@@ -59,21 +109,14 @@ const App = () => {
       }
     });
 
+    loadGroupsAndConcepts();
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       unsubscribe();
     };
   }, []);
-
-  const filterConceptsByGroup = (group) => {
-    const filteredConcepts = group === 'all' 
-      ? conceptsData.concepts 
-      : conceptsData.concepts.filter(c => c.group === group);
-    setConcepts(shuffleArray(filteredConcepts));
-    setCurrentConceptIndex(0);
-    setIsFlipped(false);
-  };
 
   const handleGroupChange = (event) => {
     setSelectedGroup(event.target.value);
@@ -215,7 +258,9 @@ const App = () => {
         </Toolbar>
       </AppBar>
       <Container maxWidth="sm" sx={{ mt: 4 }}>
-        {concepts.length > 0 && (
+        {isLoading ? (
+          <Typography>Loading...</Typography>
+        ) : concepts.length > 0 ? (
           <>
             <Box display="flex" flexDirection="column" alignItems="center" my={4}>
               <MemoryCard 
@@ -247,62 +292,66 @@ const App = () => {
             </Box>
             <ScoreDisplay score={score} totalAttempts={totalAttempts} />
             <Box mt={2} mb={2} sx={{ position: 'relative', height: '4px', backgroundColor: '#e0e0e0', borderRadius: '2px' }}>
-              <Box
-                sx={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  height: '100%',
-                  backgroundColor: '#2196f3',
-                  borderRadius: '2px',
-                  transition: 'width 0.5s ease',
-                  width: `${((currentConceptIndex + 1) / concepts.length) * 100}%`,
-                }}
-              />
-            </Box>
-          </>
-        )}
-        
-        <Box display="flex" justifyContent="center" gap={2} mt={2}>
-          <Button variant="contained" color="primary" onClick={handleNextCard}>
-            Next Card
-          </Button>
-          <Button variant="contained" color="secondary" onClick={handleShuffleCards}>
-            Shuffle Cards
-          </Button>
-        </Box>
-
-        {!user && (
-          <Box mt={4} textAlign="center">
-            {!showAuthOptions ? (
-              <Button variant="contained" color="primary" onClick={() => setShowAuthOptions(true)}>
-                Guardar Puntajes
-              </Button>
-            ) : (
-              <Box>
-                <Typography variant="body1" gutterBottom>
-                  Inicia sesión para guardar tus puntajes:
-                </Typography>
-                <Button variant="contained" color="primary" onClick={handleGoogleSignIn} sx={{ mr: 2 }}>
-                  Google
-                </Button>
-                <Button variant="contained" color="secondary" onClick={handleAnonymousSignIn}>
-                  Anónimo
-                </Button>
-              </Box>
-            )}
+            <Box
+              sx={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                height: '100%',
+                backgroundColor: '#2196f3',
+                borderRadius: '2px',
+                transition: 'width 0.5s ease',
+                width: `${((currentConceptIndex + 1) / concepts.length) * 100}%`,
+              }}
+            />
           </Box>
-        )}
-        <Snackbar
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-          open={snackbarOpen}
-          autoHideDuration={6000}
-          onClose={() => setSnackbarOpen(false)}
-          message={snackbarMessage}
-        />
-      </Container>
-    </>
-  );
-};
+          <Box display="flex" justifyContent="center" gap={2} mt={2}>
+            <Button variant="contained" color="primary" onClick={handleNextCard}>
+              Next Card
+            </Button>
+            <Button variant="contained" color="secondary" onClick={handleShuffleCards}>
+              Shuffle Cards
+            </Button>
+          </Box>
+        </>
+      ) : (
+        // Nuevo mensaje cuando no hay conceptos disponibles
+        <Typography variant="h6" align="center" my={4}>
+          No concepts available for this group.
+        </Typography>
+      )}
+
+{!user && (
+        <Box mt={4} textAlign="center">
+          {!showAuthOptions ? (
+            <Button variant="contained" color="primary" onClick={() => setShowAuthOptions(true)}>
+              Guardar Puntajes
+            </Button>
+          ) : (
+            <Box>
+              <Typography variant="body1" gutterBottom>
+                Inicia sesión para guardar tus puntajes:
+              </Typography>
+              <Button variant="contained" color="primary" onClick={handleGoogleSignIn} sx={{ mr: 2 }}>
+                Google
+              </Button>
+              <Button variant="contained" color="secondary" onClick={handleAnonymousSignIn}>
+                Anónimo
+              </Button>
+            </Box>
+          )}
+        </Box>
+      )}
+      <Snackbar
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={() => setSnackbarOpen(false)}
+        message={snackbarMessage}
+      />
+    </Container>
+  </>
+);
+}; // Cierre de la función App
 
 export default App;
