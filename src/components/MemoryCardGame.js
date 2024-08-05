@@ -1,20 +1,16 @@
 import React from 'react';
-import { Box, IconButton, Button, Typography } from '@mui/material';
+import { Box, IconButton, Button } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import MemoryCard from './MemoryCard';
-import ScoreDisplay from './ScoreDisplay';
 import ProgressBar from './ProgressBar';
 
 const MemoryCardGame = ({
   currentConcept,
   isFlipped,
   onFlip,
-  performance,
   hasVoted,
   onScoreUpdate,
-  score,
-  totalAttempts,
   currentIndex,
   totalConcepts,
   onNextCard,
@@ -28,7 +24,6 @@ const MemoryCardGame = ({
           explanation={currentConcept.explanation}
           isFlipped={isFlipped}
           onFlip={onFlip}
-          performance={performance}
         />
         <Box display="flex" justifyContent="center" gap={2} mt={2}>
           <IconButton 
@@ -51,7 +46,6 @@ const MemoryCardGame = ({
           </IconButton>
         </Box>
       </Box>
-      <ScoreDisplay score={score} totalAttempts={totalAttempts} />
       <ProgressBar currentIndex={currentIndex} totalConcepts={totalConcepts} />
       <Box display="flex" justifyContent="center" gap={2} mt={2}>
         <Button variant="contained" color="primary" onClick={onNextCard}>

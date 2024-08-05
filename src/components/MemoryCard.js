@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 
-const MemoryCard = ({ concept, explanation, isFlipped, onFlip, performance }) => {
+const MemoryCard = ({ concept, explanation, isFlipped, onFlip }) => {
   return (
     <Card 
       onClick={onFlip}
@@ -37,11 +37,6 @@ const MemoryCard = ({ concept, explanation, isFlipped, onFlip, performance }) =>
           borderRadius: '4px',
         }}>
           <Typography variant="h5">{concept}</Typography>
-          {performance && (
-            <Typography variant="caption" sx={{ mt: 1 }}>
-              Accuracy: {performance.accuracy.toFixed(2)}% ({performance.correctAttempts}/{performance.totalAttempts})
-            </Typography>
-          )}
         </CardContent>
         <CardContent sx={{
           position: 'absolute',

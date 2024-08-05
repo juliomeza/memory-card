@@ -3,7 +3,7 @@ import { Container, CircularProgress, Box, Snackbar, Typography } from '@mui/mat
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { auth, db } from './services/firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { initializeUserProgress, updateUserProgress, getUserProgress, getConceptPerformance } from './services/userProgressManager';
+import { initializeUserProgress, updateUserProgress } from './services/userProgressManager';
 import Header from './components/Header';
 import MemoryCardGame from './components/MemoryCardGame';
 import Login from './components/Login';
@@ -22,8 +22,6 @@ const App = () => {
   const [currentConceptIndex, setCurrentConceptIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [user, setUser] = useState(null);
-  const [score, setScore] = useState(0);
-  const [totalAttempts, setTotalAttempts] = useState(0);
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState('all');
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -31,7 +29,6 @@ const App = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [hasVoted, setHasVoted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [currentConceptPerformance, setCurrentConceptPerformance] = useState(null);
 
   const loadGroupsAndConcepts = useCallback(async () => {
     setIsLoading(true);
@@ -105,7 +102,6 @@ const App = () => {
       setUser(currentUser);
       if (currentUser) {
         await initializeUserProgress(currentUser.uid);
-        loadUserProgress(currentUser.uid);
       }
     });
 
@@ -118,38 +114,15 @@ const App = () => {
     };
   }, [loadGroupsAndConcepts]);
 
-  const getCurrentConceptPerformance = useCallback(async () => {
-    if (user && concepts.length > 0) {
-      const progress = await getUserProgress(user.uid);
-      const performance = getConceptPerformance(progress, concepts[currentConceptIndex].id);
-      setCurrentConceptPerformance(performance);
-    }
-  }, [user, concepts, currentConceptIndex]);
-
-  useEffect(() => {
-    if (user && concepts.length > 0) {
-      getCurrentConceptPerformance();
-    }
-  }, [user, concepts, currentConceptIndex, getCurrentConceptPerformance]);
-
   const handleGroupChange = useCallback((event) => {
     setSelectedGroup(event.target.value);
     filterConceptsByGroup(event.target.value);
   }, [filterConceptsByGroup]);
 
-  const loadUserProgress = useCallback(async (userId) => {
-    const progress = await getUserProgress(userId);
-    if (progress) {
-      setScore(progress.correctAttempts);
-      setTotalAttempts(progress.totalAttempts);
-    }
-  }, []);
-
   const handleNextCard = useCallback(() => {
     setCurrentConceptIndex((prevIndex) => (prevIndex + 1) % concepts.length);
     setIsFlipped(false);
     setHasVoted(false);
-    setCurrentConceptPerformance(null);
   }, [concepts.length]);
 
   const handleShuffleCards = useCallback(() => {
@@ -165,19 +138,14 @@ const App = () => {
   const handleScoreUpdate = useCallback(async (remembered) => {
     if (!hasVoted && user) {
       await updateUserProgress(user.uid, concepts[currentConceptIndex].id, remembered);
-      setScore(prevScore => remembered ? prevScore + 1 : prevScore);
-      setTotalAttempts(prevAttempts => prevAttempts + 1);
       setHasVoted(true);
-      getCurrentConceptPerformance();
       setTimeout(handleNextCard, 500);
     }
-  }, [user, hasVoted, concepts, currentConceptIndex, getCurrentConceptPerformance, handleNextCard]);
+  }, [user, hasVoted, concepts, currentConceptIndex, handleNextCard]);
 
   const handleSignOut = useCallback(async () => {
     try {
       await signOut(auth);
-      setScore(0);
-      setTotalAttempts(0);
     } catch (error) {
       console.error("Error signing out:", error);
       setSnackbarMessage('Failed to sign out. Please try again.');
@@ -209,11 +177,8 @@ const App = () => {
               currentConcept={concepts[currentConceptIndex]}
               isFlipped={isFlipped}
               onFlip={handleFlip}
-              performance={currentConceptPerformance}
               hasVoted={hasVoted}
               onScoreUpdate={handleScoreUpdate}
-              score={score}
-              totalAttempts={totalAttempts}
               currentIndex={currentConceptIndex}
               totalConcepts={concepts.length}
               onNextCard={handleNextCard}
