@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Button, Box, Typography, AppBar, Toolbar, LinearProgress, Select, MenuItem, IconButton, Snackbar } from '@mui/material';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Container, Button, Box, Typography, AppBar, Toolbar, CircularProgress, Select, MenuItem, IconButton, Snackbar } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signInAnonymously, signOut } from 'firebase/auth';
-import { auth, db } from './firebase';
+import { auth, db } from './services/firebase';
 import { doc, setDoc, getDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import MemoryCard from './components/MemoryCard';
 import ScoreDisplay from './components/ScoreDisplay';
-
+import { initializeUserProgress, updateUserProgress, getUserProgress, getConceptPerformance } from './services/userProgressManager';
 
 const shuffleArray = (array) => {
   const shuffled = [...array];
@@ -33,8 +33,9 @@ const App = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [hasVoted, setHasVoted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentConceptPerformance, setCurrentConceptPerformance] = useState(null);
 
-  const loadGroupsAndConcepts = async () => {
+  const loadGroupsAndConcepts = useCallback(async () => {
     setIsLoading(true);
     try {
       const conceptsRef = collection(db, 'concepts');
@@ -55,9 +56,9 @@ const App = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const filterConceptsByGroup = async (group) => {
+  const filterConceptsByGroup = useCallback(async (group) => {
     setIsLoading(true);
     try {
       const conceptsRef = collection(db, 'concepts');
@@ -85,7 +86,7 @@ const App = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -102,10 +103,11 @@ const App = () => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        loadUserScore(currentUser.uid);
+        await initializeUserProgress(currentUser.uid);
+        loadUserProgress(currentUser.uid);
       }
     });
 
@@ -116,74 +118,64 @@ const App = () => {
       window.removeEventListener('offline', handleOffline);
       unsubscribe();
     };
-  }, []);
+  }, [loadGroupsAndConcepts]);
 
-  const handleGroupChange = (event) => {
+  const getCurrentConceptPerformance = useCallback(async () => {
+    if (user && concepts.length > 0) {
+      const progress = await getUserProgress(user.uid);
+      const performance = getConceptPerformance(progress, concepts[currentConceptIndex].id);
+      setCurrentConceptPerformance(performance);
+    }
+  }, [user, concepts, currentConceptIndex]);
+
+  useEffect(() => {
+    if (user && concepts.length > 0) {
+      getCurrentConceptPerformance();
+    }
+  }, [user, concepts, currentConceptIndex, getCurrentConceptPerformance]);
+
+  const handleGroupChange = useCallback((event) => {
     setSelectedGroup(event.target.value);
     filterConceptsByGroup(event.target.value);
-  };
+  }, [filterConceptsByGroup]);
 
-  const loadUserScore = async (userId) => {
-    try {
-      const userDocRef = doc(db, 'users', userId);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        setScore(userData.score || 0);
-        setTotalAttempts(userData.totalAttempts || 0);
-      }
-    } catch (error) {
-      console.error("Error loading user score:", error);
-      setSnackbarMessage('Failed to load score. Please try again later.');
-      setSnackbarOpen(true);
+  const loadUserProgress = useCallback(async (userId) => {
+    const progress = await getUserProgress(userId);
+    if (progress) {
+      setScore(progress.correctAttempts);
+      setTotalAttempts(progress.totalAttempts);
     }
-  };
+  }, []);
 
-  const saveUserScore = async () => {
-    if (user) {
-      try {
-        const userDocRef = doc(db, 'users', user.uid);
-        await setDoc(userDocRef, { score, totalAttempts }, { merge: true });
-      } catch (error) {
-        console.error("Error saving user score:", error);
-        if (!isOnline) {
-          setSnackbarMessage('You are offline. Score will be saved when you reconnect.');
-        } else {
-          setSnackbarMessage('Failed to save score. Please try again later.');
-        }
-        setSnackbarOpen(true);
-      }
-    }
-  };
-
-  const handleNextCard = () => {
+  const handleNextCard = useCallback(() => {
     setCurrentConceptIndex((prevIndex) => (prevIndex + 1) % concepts.length);
     setIsFlipped(false);
     setHasVoted(false);
-  };
+    setCurrentConceptPerformance(null);
+  }, [concepts.length]);
 
-  const handleShuffleCards = () => {
+  const handleShuffleCards = useCallback(() => {
     setConcepts(shuffleArray([...concepts]));
     setCurrentConceptIndex(0);
     setIsFlipped(false);
-  };
+  }, [concepts]);
 
-  const handleFlip = () => {
-    setIsFlipped(!isFlipped);
-  };
+  const handleFlip = useCallback(() => {
+    setIsFlipped(prev => !prev);
+  }, []);
 
-  const handleScoreUpdate = (remembered) => {
-    if (!hasVoted) {
+  const handleScoreUpdate = useCallback(async (remembered) => {
+    if (!hasVoted && user) {
+      await updateUserProgress(user.uid, concepts[currentConceptIndex].id, remembered);
       setScore(prevScore => remembered ? prevScore + 1 : prevScore);
       setTotalAttempts(prevAttempts => prevAttempts + 1);
-      saveUserScore();
       setHasVoted(true);
-      // Esperar un momento antes de pasar a la siguiente tarjeta
+      getCurrentConceptPerformance();
       setTimeout(handleNextCard, 500);
     }
-  };
+  }, [user, hasVoted, concepts, currentConceptIndex, getCurrentConceptPerformance, handleNextCard]);
 
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = useCallback(async () => {
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -192,9 +184,9 @@ const App = () => {
       setSnackbarMessage('Failed to sign in with Google. Please try again.');
       setSnackbarOpen(true);
     }
-  };
+  }, []);
 
-  const handleAnonymousSignIn = async () => {
+  const handleAnonymousSignIn = useCallback(async () => {
     try {
       await signInAnonymously(auth);
     } catch (error) {
@@ -202,9 +194,9 @@ const App = () => {
       setSnackbarMessage('Failed to sign in anonymously. Please try again.');
       setSnackbarOpen(true);
     }
-  };
+  }, []);
 
-  const handleSignOut = async () => {
+  const handleSignOut = useCallback(async () => {
     try {
       await signOut(auth);
       setScore(0);
@@ -214,11 +206,19 @@ const App = () => {
       setSnackbarMessage('Failed to sign out. Please try again.');
       setSnackbarOpen(true);
     }
-  };
+  }, []);
 
-  const getFirstName = (fullName) => {
+  const getFirstName = useCallback((fullName) => {
     return fullName ? fullName.split(' ')[0] : 'Usuario';
-  };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <>
@@ -228,7 +228,7 @@ const App = () => {
             Memory Card
           </Typography>
           <Box sx={{ minWidth: 120, mr: 2 }}>
-          <Select
+            <Select
               value={selectedGroup}
               onChange={handleGroupChange}
               displayEmpty
@@ -258,9 +258,7 @@ const App = () => {
         </Toolbar>
       </AppBar>
       <Container maxWidth="sm" sx={{ mt: 4 }}>
-        {isLoading ? (
-          <Typography>Loading...</Typography>
-        ) : concepts.length > 0 ? (
+        {concepts.length > 0 ? (
           <>
             <Box display="flex" flexDirection="column" alignItems="center" my={4}>
               <MemoryCard 
@@ -268,6 +266,7 @@ const App = () => {
                 explanation={concepts[currentConceptIndex].explanation}
                 isFlipped={isFlipped}
                 onFlip={handleFlip}
+                performance={currentConceptPerformance}
               />
               <Box display="flex" justifyContent="center" gap={2} mt={2}>
                 <IconButton 
@@ -292,66 +291,65 @@ const App = () => {
             </Box>
             <ScoreDisplay score={score} totalAttempts={totalAttempts} />
             <Box mt={2} mb={2} sx={{ position: 'relative', height: '4px', backgroundColor: '#e0e0e0', borderRadius: '2px' }}>
-            <Box
-              sx={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                height: '100%',
-                backgroundColor: '#2196f3',
-                borderRadius: '2px',
-                transition: 'width 0.5s ease',
-                width: `${((currentConceptIndex + 1) / concepts.length) * 100}%`,
-              }}
-            />
-          </Box>
-          <Box display="flex" justifyContent="center" gap={2} mt={2}>
-            <Button variant="contained" color="primary" onClick={handleNextCard}>
-              Next Card
-            </Button>
-            <Button variant="contained" color="secondary" onClick={handleShuffleCards}>
-              Shuffle Cards
-            </Button>
-          </Box>
-        </>
-      ) : (
-        // Nuevo mensaje cuando no hay conceptos disponibles
-        <Typography variant="h6" align="center" my={4}>
-          No concepts available for this group.
-        </Typography>
-      )}
-
-{!user && (
-        <Box mt={4} textAlign="center">
-          {!showAuthOptions ? (
-            <Button variant="contained" color="primary" onClick={() => setShowAuthOptions(true)}>
-              Guardar Puntajes
-            </Button>
-          ) : (
-            <Box>
-              <Typography variant="body1" gutterBottom>
-                Inicia sesión para guardar tus puntajes:
-              </Typography>
-              <Button variant="contained" color="primary" onClick={handleGoogleSignIn} sx={{ mr: 2 }}>
-                Google
+              <Box
+                sx={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  height: '100%',
+                  backgroundColor: '#2196f3',
+                  borderRadius: '2px',
+                  transition: 'width 0.5s ease',
+                  width: `${((currentConceptIndex + 1) / concepts.length) * 100}%`,
+                }}
+              />
+            </Box>
+            <Box display="flex" justifyContent="center" gap={2} mt={2}>
+              <Button variant="contained" color="primary" onClick={handleNextCard}>
+                Next Card
               </Button>
-              <Button variant="contained" color="secondary" onClick={handleAnonymousSignIn}>
-                Anónimo
+              <Button variant="contained" color="secondary" onClick={handleShuffleCards}>
+                Shuffle Cards
               </Button>
             </Box>
-          )}
-        </Box>
-      )}
-      <Snackbar
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-        message={snackbarMessage}
-      />
-    </Container>
-  </>
-);
-}; // Cierre de la función App
+          </>
+        ) : (
+          <Typography variant="h6" align="center" my={4}>
+            No concepts available for this group.
+          </Typography>
+        )}
+
+        {!user && (
+          <Box mt={4} textAlign="center">
+            {!showAuthOptions ? (
+              <Button variant="contained" color="primary" onClick={() => setShowAuthOptions(true)}>
+                Guardar Puntajes
+              </Button>
+            ) : (
+              <Box>
+                <Typography variant="body1" gutterBottom>
+                  Inicia sesión para guardar tus puntajes:
+                </Typography>
+                <Button variant="contained" color="primary" onClick={handleGoogleSignIn} sx={{ mr: 2 }}>
+                  Google
+                </Button>
+                <Button variant="contained" color="secondary" onClick={handleAnonymousSignIn}>
+                  Anónimo
+                </Button>
+              </Box>
+            )}
+          </Box>
+        )}
+        <Snackbar
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+          open={snackbarOpen}
+          autoHideDuration={6000}
+          onClose={() => setSnackbarOpen(false)}
+          message={snackbarMessage}
+        />
+      </Container>
+    </>
+  );
+};
 
 export default App;

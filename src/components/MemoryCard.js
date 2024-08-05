@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 
-const MemoryCard = ({ concept, explanation, isFlipped, onFlip }) => {
+const MemoryCard = ({ concept, explanation, isFlipped, onFlip, performance }) => {
   return (
     <Card 
       onClick={onFlip}
@@ -10,7 +10,7 @@ const MemoryCard = ({ concept, explanation, isFlipped, onFlip }) => {
         height: 200,
         perspective: '1000px',
         cursor: 'pointer',
-        boxShadow: 'none', // Eliminamos la sombra que puede causar la apariencia de borde
+        boxShadow: 'none',
         '& > div': {
           transition: 'transform 0.6s',
           transformStyle: 'preserve-3d',
@@ -29,13 +29,19 @@ const MemoryCard = ({ concept, explanation, isFlipped, onFlip }) => {
           height: '100%',
           backfaceVisibility: 'hidden',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: '#3498db',
           color: 'white',
-          borderRadius: '4px', // Aseguramos que los bordes sean redondeados
+          borderRadius: '4px',
         }}>
           <Typography variant="h5">{concept}</Typography>
+          {performance && (
+            <Typography variant="caption" sx={{ mt: 1 }}>
+              Accuracy: {performance.accuracy.toFixed(2)}% ({performance.correctAttempts}/{performance.totalAttempts})
+            </Typography>
+          )}
         </CardContent>
         <CardContent sx={{
           position: 'absolute',
@@ -48,7 +54,7 @@ const MemoryCard = ({ concept, explanation, isFlipped, onFlip }) => {
           backgroundColor: '#2ecc71',
           color: 'white',
           transform: 'rotateY(180deg)',
-          borderRadius: '4px', // Aseguramos que los bordes sean redondeados
+          borderRadius: '4px',
         }}>
           <Typography variant="body1">{explanation}</Typography>
         </CardContent>
