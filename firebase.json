@@ -13,12 +13,7 @@
       }
     ],
     "environment": {
-      "REACT_APP_FIREBASE_API_KEY": "${react.app.firebase_api_key}",
-      "REACT_APP_FIREBASE_AUTH_DOMAIN": "${react.app.firebase_auth_domain}",
-      "REACT_APP_FIREBASE_PROJECT_ID": "${react.app.firebase_project_id}",
-      "REACT_APP_FIREBASE_STORAGE_BUCKET": "${react.app.firebase_storage_bucket}",
-      "REACT_APP_FIREBASE_MESSAGING_SENDER_ID": "${react.app.firebase_messaging_sender_id}",
-      "REACT_APP_FIREBASE_APP_ID": "${react.app.firebase_app_id}"
+      "FIREBASE_CONFIG": "{\"react\":{\"app\":{\"firebase_auth_domain\":\"memory-card-944f2.firebaseapp.com\",\"firebase_messaging_sender_id\":\"415342274871\",\"firebase_app_id\":\"1:415342274871:web:694bf31a1cd8501e2a92b2\",\"firebase_storage_bucket\":\"memory-card-944f2.appspot.com\",\"firebase_api_key\":\"AIzaSyD9D9el_Y-B1avd4OiYc3OF-L4R2Ttoeo0\",\"firebase_project_id\":\"memory-card-944f2\"}}}"
     }
   }
 }
