@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { AppBar, Toolbar, Typography, Box, Button, Menu, MenuItem } from '@mui/material';
+import { AppBar, Toolbar, Box, IconButton, Menu, MenuItem, Avatar } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
 import LoginButton from './LoginButton';
 
 const Header = ({ user, onSignOut, isAnonymous }) => {
@@ -23,28 +24,37 @@ const Header = ({ user, onSignOut, isAnonymous }) => {
   };
 
   return (
-    <AppBar position="static">
+    <AppBar position="static" elevation={0} sx={{ backgroundColor: 'background.default' }}>
       <Toolbar>
-        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Memory Card
-        </Typography>
-        <Box display="flex" alignItems="center">
-          {!isAnonymous && user && (
-            <>
-              <Button color="inherit" onClick={handleClick}>
-                {getFirstName(user.displayName)}
-              </Button>
-              <Menu
-                anchorEl={anchorEl}
-                open={Boolean(anchorEl)}
-                onClose={handleClose}
-              >
-                <MenuItem onClick={handleSignOut}>Cerrar Sesión</MenuItem>
-              </Menu>
-            </>
-          )}
-          {isAnonymous && <LoginButton />}
-        </Box>
+        <IconButton
+          edge="start"
+          color="inherit"
+          aria-label="menu"
+          sx={{ mr: 2, color: 'text.primary' }}
+        >
+          <MenuIcon />
+        </IconButton>
+        <Box sx={{ flexGrow: 1 }} />
+        {!isAnonymous && user && (
+          <>
+            <Avatar
+              src={user.photoURL}
+              alt={user.displayName}
+              onClick={handleClick}
+              sx={{ cursor: 'pointer' }}
+            >
+              {getFirstName(user.displayName)[0]}
+            </Avatar>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleClose}
+            >
+              <MenuItem onClick={handleSignOut}>Cerrar Sesión</MenuItem>
+            </Menu>
+          </>
+        )}
+        {isAnonymous && <LoginButton />}
       </Toolbar>
     </AppBar>
   );

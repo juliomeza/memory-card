@@ -1,11 +1,12 @@
 import React from 'react';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 
 const ProgressBar = ({ currentIndex, totalConcepts }) => {
+  const theme = useTheme();
   const progress = ((currentIndex + 1) / totalConcepts) * 100;
 
   return (
-    <Box sx={{ position: 'relative', height: '24px', backgroundColor: '#e0e0e0', borderRadius: '12px', overflow: 'hidden' }}>
+    <Box sx={{ position: 'relative', height: '24px', backgroundColor: theme.palette.background.paper, borderRadius: '12px', overflow: 'hidden', boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.1)' }}>
       <Box
         sx={{
           position: 'absolute',
@@ -13,7 +14,7 @@ const ProgressBar = ({ currentIndex, totalConcepts }) => {
           top: 0,
           height: '100%',
           width: `${progress}%`,
-          backgroundColor: '#2196f3',
+          backgroundColor: theme.palette.text.primary,
           transition: 'width 0.5s ease',
         }}
       />
@@ -24,8 +25,9 @@ const ProgressBar = ({ currentIndex, totalConcepts }) => {
           left: '50%',
           top: '50%',
           transform: 'translate(-50%, -50%)',
-          color: 'text.primary',
+          color: theme.palette.text.primary,
           zIndex: 1,
+          mixBlendMode: 'difference', // Esto asegura que el texto sea visible tanto en la parte llena como en la vacía de la barra
         }}
       >
         {`${currentIndex + 1}/${totalConcepts}`}

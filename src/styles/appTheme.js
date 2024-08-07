@@ -3,53 +3,52 @@ import { createTheme } from '@mui/material/styles';
 const appTheme = createTheme({
   palette: {
     primary: {
-      main: '#4A6572', // Azul grisáceo medio
-      light: '#8AA1AD', // Azul grisáceo claro
-      dark: '#2C3E50', // Azul grisáceo oscuro
-      contrastText: '#ffffff',
+      main: '#E8E8E8',
+      light: '#F5F5F5',
+      dark: '#D0D0D0',
+      contrastText: '#000000',
     },
     secondary: {
-      main: '#F9C6C6', // Rosa pálido
-      light: '#FFE3E3',
-      dark: '#E5A4A4',
-      contrastText: '#333333',
+      main: '#CCCCCC',
+      light: '#E0E0E0',
+      dark: '#BABABA',
+      contrastText: '#000000',
     },
     background: {
-      default: '#E0E5E9', // Gris muy claro
-      paper: '#F5F7F9', // Blanco grisáceo
+      default: '#F5F5F0',
+      paper: '#FFFFFF',
     },
     text: {
-      primary: '#2C3E50', // Azul grisáceo oscuro
-      secondary: '#4A6572', // Azul grisáceo medio
+      primary: '#000000',
+      secondary: '#4A4A4A',
     },
   },
   typography: {
     fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
-    h1: {
-      fontSize: '2.5rem',
-      fontWeight: 500,
-    },
-    h5: {
-      fontWeight: 500,
-    },
-    h6: {
-      fontSize: '1.25rem',
-      fontWeight: 500,
-    },
-    body1: {
-      fontSize: '1rem',
-      lineHeight: 1.5,
-    },
+    h1: { fontSize: '2.5rem', fontWeight: 500 },
+    h5: { fontWeight: 500 },
+    h6: { fontSize: '1.25rem', fontWeight: 500 },
+    body1: { fontSize: '1rem', lineHeight: 1.5 },
   },
   shape: {
     borderRadius: 12,
   },
   components: {
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#F5F5F0',
+          color: '#000000',
+          boxShadow: 'none',
+        },
+      },
+    },
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)',
-          backgroundColor: '#F5F7F9', // Blanco grisáceo
+          backgroundColor: '#FFFFFF',
+          boxShadow: '0px 8px 8px rgba(0, 0, 0, 0.15)', // Sombra más pronunciada y hacia abajo
+          borderRadius: '12px',
         },
       },
     },
@@ -61,34 +60,26 @@ const appTheme = createTheme({
         },
       },
     },
-    MuiIconButton: {
-      styleOverrides: {
-        root: {
-          backgroundColor: '#E0E5E9', // Gris muy claro
-          '&:hover': {
-            backgroundColor: '#C9D6DE', // Un poco más oscuro al hover
-          },
-        },
-      },
-    },
     MuiToggleButton: {
       styleOverrides: {
         root: {
-          borderRadius: 20, // Bordes redondeados uniformes
-          margin: '0 4px', // Pequeño margen horizontal
+          borderRadius: 20,
+          margin: '0 4px',
           padding: '6px 16px',
           border: 'none',
-          backgroundColor: '#E0E5E9',
-          color: '#4A6572',
+          backgroundColor: '#FFFFFF',
+          color: '#000000',
+          boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.1)', // Sombra más pronunciada y hacia abajo
           '&.Mui-selected': {
-            backgroundColor: '#4A6572',
-            color: '#ffffff',
+            backgroundColor: '#E8E8E8',
+            color: '#000000',
+            boxShadow: 'inset 0px -4px 4px rgba(0, 0, 0, 0.1)', // Sombra interior cuando está seleccionado
             '&:hover': {
-              backgroundColor: '#3A5162',
+              backgroundColor: '#D0D0D0',
             },
           },
           '&:hover': {
-            backgroundColor: '#C9D6DE',
+            backgroundColor: '#F0F0F0',
           },
         },
       },
@@ -96,14 +87,14 @@ const appTheme = createTheme({
     MuiToggleButtonGroup: {
       styleOverrides: {
         root: {
-          gap: 8, // Espacio entre botones
+          gap: 8,
         },
         grouped: {
           '&:not(:first-of-type)': {
-            borderRadius: 20, // Asegura que los botones del medio y final tengan bordes redondeados
+            borderRadius: 20,
           },
           '&:first-of-type': {
-            borderRadius: 20, // Asegura que el primer botón tenga bordes redondeados
+            borderRadius: 20,
           },
         },
       },

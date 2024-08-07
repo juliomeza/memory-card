@@ -27,11 +27,12 @@ const CardFace = styled(CardContent)(({ theme, isfront }) => ({
   flexDirection: 'column',
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: isfront ? theme.palette.primary.light : theme.palette.secondary.light,
-  color: isfront ? theme.palette.primary.contrastText : theme.palette.secondary.contrastText,
-  borderRadius: '4px', // Esquinas muy sutilmente redondeadas
+  backgroundColor: theme.palette.background.paper,
+  color: theme.palette.text.primary,
+  borderRadius: '12px', // Aumentado para mayor suavidad
   transition: 'box-shadow 0.6s',
   transform: isfront ? 'rotateY(0deg)' : 'rotateY(180deg)',
+  boxShadow: '0px 8px 8px rgba(0, 0, 0, 0.15)', // Sombra pronunciada
 }));
 
 const MemoryCard = ({ concept, explanation, isFlipped, onFlip }) => {
@@ -40,13 +41,12 @@ const MemoryCard = ({ concept, explanation, isFlipped, onFlip }) => {
       width: 300,
       height: 200,
       backgroundColor: 'background.default',
-      borderRadius: '4px', // Coincide con el borderRadius de CardFace
+      borderRadius: '12px', // Aumentado para coincidir con CardFace
       overflow: 'hidden',
     }}>
       <StyledCard onClick={onFlip}>
         <Box sx={{ 
           transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)', // Sombra sutil
         }}>
           <CardFace isfront="true">
             <Typography variant="h5" fontWeight="bold">{concept}</Typography>
