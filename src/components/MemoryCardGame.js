@@ -14,6 +14,10 @@ const MemoryCardGame = ({
   currentIndex,
   totalConcepts
 }) => {
+  // Definimos los nuevos colores para los botones
+  const thumbUpColor = '#8B5CF6'; // Tono morado suave
+  const thumbDownColor = '#5EEAD4'; // Verde azulado
+
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
       <Box my={2}>
@@ -26,20 +30,30 @@ const MemoryCardGame = ({
       </Box>
       <Box display="flex" justifyContent="center" gap={2} mt={2} mb={2}>
         <IconButton 
-          color="success" 
           onClick={() => onScoreUpdate(true)} 
           aria-label="Remembered"
           disabled={hasVoted}
-          sx={{ fontSize: '2rem' }}
+          sx={{ 
+            fontSize: '2rem',
+            color: thumbUpColor,
+            '&:hover': {
+              backgroundColor: `${thumbUpColor}20`, // 20% de opacidad para el efecto hover
+            },
+          }}
         >
           <ThumbUpIcon fontSize="inherit" />
         </IconButton>
         <IconButton 
-          color="error" 
           onClick={() => onScoreUpdate(false)} 
           aria-label="Didn't remember"
           disabled={hasVoted}
-          sx={{ fontSize: '2rem' }}
+          sx={{ 
+            fontSize: '2rem',
+            color: thumbDownColor,
+            '&:hover': {
+              backgroundColor: `${thumbDownColor}20`, // 20% de opacidad para el efecto hover
+            },
+          }}
         >
           <ThumbDownIcon fontSize="inherit" />
         </IconButton>
