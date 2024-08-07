@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, CircularProgress, Box, Snackbar, Typography } from '@mui/material';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { ThemeProvider } from '@mui/material/styles';
+import { onAuthStateChanged, signOut, signInAnonymously } from 'firebase/auth';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import { auth } from './services/firebase';
 import { initializeUserProgress, updateUserProgress, getUserProgress } from './services/userProgressManager';
 import Header from './components/Header';
 import MemoryCardGame from './components/MemoryCardGame';
-import Login from './components/Login';
 import ConceptFilter from './components/ConceptFilter';
 import { useConcepts } from './hooks/useConcepts';
+import appTheme from './styles/appTheme';
 
 const App = () => {
   const [user, setUser] = useState(null);
+  const [isAnonymous, setIsAnonymous] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
@@ -45,12 +48,18 @@ const App = () => {
       try {
         if (currentUser) {
           setUser(currentUser);
+          setIsAnonymous(currentUser.isAnonymous);
           await initializeUserProgress(currentUser.uid);
           const progress = await getUserProgress(currentUser.uid);
           setUserProgress(progress);
         } else {
-          setUser(null);
-          setUserProgress(null);
+          // Si no hay usuario, iniciar sesión anónimamente
+          const anonymousUser = await signInAnonymously(auth);
+          setUser(anonymousUser.user);
+          setIsAnonymous(true);
+          await initializeUserProgress(anonymousUser.user.uid);
+          const progress = await getUserProgress(anonymousUser.user.uid);
+          setUserProgress(progress);
         }
       } catch (error) {
         console.error("Error during auth state change:", error);
@@ -112,62 +121,66 @@ const App = () => {
 
   if (isAuthLoading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
-        <CircularProgress />
-      </Box>
+      <ThemeProvider theme={appTheme}>
+        <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
+          <CircularProgress />
+        </Box>
+      </ThemeProvider>
     );
   }
 
   return (
-    <>
-      <Header user={user} onSignOut={handleSignOut} />
-      <Container maxWidth="sm" sx={{ mt: 4 }}>
-        {authError ? (
-          <Typography variant="h6" color="error" align="center" my={4}>
-            {authError}
-          </Typography>
-        ) : user ? (
-          <>
-            <ConceptFilter
-              conceptFilter={conceptFilter}
-              onConceptFilterChange={handleConceptFilterChange}
-            />
-            {isLoading ? (
-              <Box display="flex" justifyContent="center" alignItems="center" height="50vh">
-                <CircularProgress />
-              </Box>
-            ) : error ? (
+    <GoogleOAuthProvider clientId="415342274871-60o0kom8akiemvbaberut99auqsq9fhj.apps.googleusercontent.com">
+      <ThemeProvider theme={appTheme}>
+        <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+          <Header user={user} onSignOut={handleSignOut} isAnonymous={isAnonymous} />
+          <Container maxWidth="sm" sx={{ mt: 4 }}>
+            {authError ? (
               <Typography variant="h6" color="error" align="center" my={4}>
-                {error}
+                {authError}
               </Typography>
-            ) : concepts.length > 0 ? (
-              <MemoryCardGame 
-                currentConcept={concepts[currentConceptIndex]}
-                isFlipped={isFlipped}
-                onFlip={handleFlip}
-                hasVoted={hasVoted}
-                onScoreUpdate={handleScoreUpdate}
-                currentIndex={currentConceptIndex}
-                totalConcepts={concepts.length}
-              />
             ) : (
-              <Typography variant="h6" align="center" my={4}>
-                No concepts available for the selected filter.
-              </Typography>
+              <>
+                <ConceptFilter
+                  conceptFilter={conceptFilter}
+                  onConceptFilterChange={handleConceptFilterChange}
+                />
+                {isLoading ? (
+                  <Box display="flex" justifyContent="center" alignItems="center" height="50vh">
+                    <CircularProgress />
+                  </Box>
+                ) : error ? (
+                  <Typography variant="h6" color="error" align="center" my={4}>
+                    {error}
+                  </Typography>
+                ) : concepts.length > 0 ? (
+                  <MemoryCardGame 
+                    currentConcept={concepts[currentConceptIndex]}
+                    isFlipped={isFlipped}
+                    onFlip={handleFlip}
+                    hasVoted={hasVoted}
+                    onScoreUpdate={handleScoreUpdate}
+                    currentIndex={currentConceptIndex}
+                    totalConcepts={concepts.length}
+                  />
+                ) : (
+                  <Typography variant="h6" align="center" my={4}>
+                    No concepts available for the selected filter.
+                  </Typography>
+                )}
+              </>
             )}
-          </>
-        ) : (
-          <Login />
-        )}
-        <Snackbar
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-          open={snackbarOpen}
-          autoHideDuration={6000}
-          onClose={() => setSnackbarOpen(false)}
-          message={snackbarMessage}
-        />
-      </Container>
-    </>
+            <Snackbar
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+              open={snackbarOpen}
+              autoHideDuration={6000}
+              onClose={() => setSnackbarOpen(false)}
+              message={snackbarMessage}
+            />
+          </Container>
+        </Box>
+      </ThemeProvider>
+    </GoogleOAuthProvider>
   );
 };
 

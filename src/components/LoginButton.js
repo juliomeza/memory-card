@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { GoogleLogin } from '@react-oauth/google';
-import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
 const LoginButton = () => {
@@ -15,10 +14,10 @@ const LoginButton = () => {
     setOpen(false);
   };
 
-  const handleGoogleSignIn = async (credentialResponse) => {
+  const handleGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
     try {
-      const credential = GoogleAuthProvider.credential(credentialResponse.credential);
-      await signInWithCredential(auth, credential);
+      await signInWithPopup(auth, provider);
       handleClose();
     } catch (error) {
       console.error("Error during Google sign in:", error);
@@ -33,12 +32,9 @@ const LoginButton = () => {
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>Log In</DialogTitle>
         <DialogContent>
-          <GoogleLogin
-            onSuccess={handleGoogleSignIn}
-            onError={() => {
-              console.log('Login Failed');
-            }}
-          />
+          <Button onClick={handleGoogleSignIn} fullWidth variant="contained" sx={{ mt: 2 }}>
+            Log in with Google
+          </Button>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>

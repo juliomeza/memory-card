@@ -1,9 +1,25 @@
-import React from 'react';
-import { AppBar, Toolbar, Typography, Box, Button } from '@mui/material';
+import React, { useState } from 'react';
+import { AppBar, Toolbar, Typography, Box, Button, Menu, MenuItem } from '@mui/material';
+import LoginButton from './LoginButton';
 
-const Header = ({ user, onSignOut }) => {
+const Header = ({ user, onSignOut, isAnonymous }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+
   const getFirstName = (fullName) => {
     return fullName ? fullName.split(' ')[0] : 'Usuario';
+  };
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleSignOut = () => {
+    onSignOut();
+    handleClose();
   };
 
   return (
@@ -12,16 +28,23 @@ const Header = ({ user, onSignOut }) => {
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           Memory Card
         </Typography>
-        {user && (
-          <Box display="flex" alignItems="center">
-            <Typography variant="body1" sx={{ mr: 2 }}>
-              {user.isAnonymous ? "Anónimo" : getFirstName(user.displayName)}
-            </Typography>
-            <Button color="inherit" onClick={onSignOut}>
-              Cerrar Sesión
-            </Button>
-          </Box>
-        )}
+        <Box display="flex" alignItems="center">
+          {!isAnonymous && user && (
+            <>
+              <Button color="inherit" onClick={handleClick}>
+                {getFirstName(user.displayName)}
+              </Button>
+              <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={handleClose}
+              >
+                <MenuItem onClick={handleSignOut}>Cerrar Sesión</MenuItem>
+              </Menu>
+            </>
+          )}
+          {isAnonymous && <LoginButton />}
+        </Box>
       </Toolbar>
     </AppBar>
   );
