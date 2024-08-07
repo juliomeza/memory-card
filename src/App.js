@@ -19,6 +19,8 @@ const App = () => {
   const [isFlipped, setIsFlipped] = useState(false);
   const [conceptFilter, setConceptFilter] = useState('all');
   const [userProgress, setUserProgress] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
 
   const { concepts, isLoading, error } = useConcepts(user, conceptFilter);
 
@@ -38,13 +40,23 @@ const App = () => {
     window.addEventListener('offline', handleOffline);
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        await initializeUserProgress(currentUser.uid);
-        const progress = await getUserProgress(currentUser.uid);
-        setUserProgress(progress);
-      } else {
-        setUserProgress(null);
+      setIsAuthLoading(true);
+      setAuthError(null);
+      try {
+        if (currentUser) {
+          setUser(currentUser);
+          await initializeUserProgress(currentUser.uid);
+          const progress = await getUserProgress(currentUser.uid);
+          setUserProgress(progress);
+        } else {
+          setUser(null);
+          setUserProgress(null);
+        }
+      } catch (error) {
+        console.error("Error during auth state change:", error);
+        setAuthError("An error occurred while authenticating. Please try again.");
+      } finally {
+        setIsAuthLoading(false);
       }
     });
 
@@ -61,21 +73,29 @@ const App = () => {
 
   const handleScoreUpdate = useCallback(async (remembered) => {
     if (!hasVoted && user) {
-      await updateUserProgress(user.uid, concepts[currentConceptIndex].id, remembered);
-      const updatedProgress = await getUserProgress(user.uid);
-      setUserProgress(updatedProgress);
-      setHasVoted(true);
-      setTimeout(() => {
-        setCurrentConceptIndex((prevIndex) => (prevIndex + 1) % concepts.length);
-        setIsFlipped(false);
-        setHasVoted(false);
-      }, 500);
+      try {
+        await updateUserProgress(user.uid, concepts[currentConceptIndex].id, remembered);
+        const updatedProgress = await getUserProgress(user.uid);
+        setUserProgress(updatedProgress);
+        setHasVoted(true);
+        setTimeout(() => {
+          setCurrentConceptIndex((prevIndex) => (prevIndex + 1) % concepts.length);
+          setIsFlipped(false);
+          setHasVoted(false);
+        }, 500);
+      } catch (error) {
+        console.error("Error updating score:", error);
+        setSnackbarMessage('Failed to update score. Please try again.');
+        setSnackbarOpen(true);
+      }
     }
   }, [user, hasVoted, concepts, currentConceptIndex]);
 
   const handleSignOut = useCallback(async () => {
     try {
       await signOut(auth);
+      setSnackbarMessage('You have been signed out successfully.');
+      setSnackbarOpen(true);
     } catch (error) {
       console.error("Error signing out:", error);
       setSnackbarMessage('Failed to sign out. Please try again.');
@@ -90,7 +110,7 @@ const App = () => {
     }
   };
 
-  if (isLoading) {
+  if (isAuthLoading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
         <CircularProgress />
@@ -102,13 +122,25 @@ const App = () => {
     <>
       <Header user={user} onSignOut={handleSignOut} />
       <Container maxWidth="sm" sx={{ mt: 4 }}>
-        {user ? (
+        {authError ? (
+          <Typography variant="h6" color="error" align="center" my={4}>
+            {authError}
+          </Typography>
+        ) : user ? (
           <>
             <ConceptFilter
               conceptFilter={conceptFilter}
               onConceptFilterChange={handleConceptFilterChange}
             />
-            {concepts.length > 0 ? (
+            {isLoading ? (
+              <Box display="flex" justifyContent="center" alignItems="center" height="50vh">
+                <CircularProgress />
+              </Box>
+            ) : error ? (
+              <Typography variant="h6" color="error" align="center" my={4}>
+                {error}
+              </Typography>
+            ) : concepts.length > 0 ? (
               <MemoryCardGame 
                 currentConcept={concepts[currentConceptIndex]}
                 isFlipped={isFlipped}
