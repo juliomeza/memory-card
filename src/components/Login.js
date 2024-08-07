@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
+import { Button, Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';
 import { signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../services/firebase';
@@ -33,12 +33,19 @@ const LoginButton = () => {
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>Log In</DialogTitle>
         <DialogContent>
-          <GoogleLogin
-            onSuccess={handleGoogleSignIn}
-            onError={() => {
-              console.log('Login Failed');
-            }}
-          />
+          <Box mt={2} textAlign="center">
+            <Typography variant="body1" gutterBottom>
+              Inicia sesión para guardar tus puntajes:
+            </Typography>
+            <Box mt={2} display="flex" justifyContent="center">
+              <GoogleLogin
+                onSuccess={handleGoogleSignIn}
+                onError={() => {
+                  console.log('Login Failed');
+                }}
+              />
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose}>Cancel</Button>

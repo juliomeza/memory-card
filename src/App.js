@@ -11,6 +11,7 @@ import ConceptFilter from './components/ConceptFilter';
 import { useConcepts } from './hooks/useConcepts';
 import appTheme from './styles/appTheme';
 
+
 const App = () => {
   const [user, setUser] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
