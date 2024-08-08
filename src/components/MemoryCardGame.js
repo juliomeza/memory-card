@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, IconButton, Typography } from '@mui/material';
+import { Box, IconButton } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import MemoryCard from './MemoryCard';
@@ -19,7 +19,7 @@ const MemoryCardGame = ({
 
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
-      <Box my={2}>
+      <Box my={2} width="100%" maxWidth="300px"> {/* Ajusta el maxWidth según el tamaño de tu flashcard */}
         <MemoryCard 
           concept={currentConcept.concept} 
           explanation={currentConcept.explanation}
@@ -27,38 +27,51 @@ const MemoryCardGame = ({
           onFlip={onFlip}
         />
       </Box>
-      <Box display="flex" justifyContent="center" gap={2} mt={2} mb={2}>
-        <IconButton 
-          onClick={() => onScoreUpdate(true)} 
-          aria-label="Remembered"
-          disabled={hasVoted}
-          sx={{ 
-            fontSize: '2rem',
-            color: thumbUpColor,
-            '&:hover': {
-              backgroundColor: `${thumbUpColor}20`,
-            },
-          }}
-        >
-          <ThumbUpIcon fontSize="inherit" />
-        </IconButton>
-        <IconButton 
-          onClick={() => onScoreUpdate(false)} 
-          aria-label="Didn't remember"
-          disabled={hasVoted}
-          sx={{ 
-            fontSize: '2rem',
-            color: thumbDownColor,
-            '&:hover': {
-              backgroundColor: `${thumbDownColor}20`,
-            },
-          }}
-        >
-          <ThumbDownIcon fontSize="inherit" />
-        </IconButton>
-      </Box>
-      <Box mt={2}>
-        <ProgressCircle current={currentIndex} total={totalConcepts} />
+      <Box 
+        display="flex" 
+        justifyContent="space-between" 
+        alignItems="center" 
+        width="100%" 
+        maxWidth="300px" 
+        mt={2} 
+        mb={2}
+        px={1} // Añadimos un poco de padding horizontal
+      >
+        <Box width="33%" display="flex" justifyContent="flex-start">
+          <IconButton 
+            onClick={() => onScoreUpdate(true)} 
+            aria-label="Remembered"
+            disabled={hasVoted}
+            sx={{ 
+              fontSize: '2rem',
+              color: thumbUpColor,
+              '&:hover': {
+                backgroundColor: `${thumbUpColor}20`,
+              },
+            }}
+          >
+            <ThumbUpIcon fontSize="inherit" />
+          </IconButton>
+        </Box>
+        <Box width="33%" display="flex" justifyContent="center">
+          <ProgressCircle current={currentIndex} total={totalConcepts} />
+        </Box>
+        <Box width="33%" display="flex" justifyContent="flex-end">
+          <IconButton 
+            onClick={() => onScoreUpdate(false)} 
+            aria-label="Didn't remember"
+            disabled={hasVoted}
+            sx={{ 
+              fontSize: '2rem',
+              color: thumbDownColor,
+              '&:hover': {
+                backgroundColor: `${thumbDownColor}20`,
+              },
+            }}
+          >
+            <ThumbDownIcon fontSize="inherit" />
+          </IconButton>
+        </Box>
       </Box>
     </Box>
   );

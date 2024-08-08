@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AppBar, Toolbar, Box, IconButton, Menu, MenuItem, Avatar } from '@mui/material';
+import { AppBar, Toolbar, Box, IconButton, Menu, MenuItem, Avatar, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import LoginButton from './LoginButton';
 
@@ -8,6 +8,10 @@ const Header = ({ user, onSignOut, isAnonymous }) => {
 
   const getFirstName = (fullName) => {
     return fullName ? fullName.split(' ')[0] : 'Usuario';
+  };
+
+  const getInitial = (fullName) => {
+    return fullName ? fullName.charAt(0).toUpperCase() : 'U';
   };
 
   const handleClick = (event) => {
@@ -37,14 +41,22 @@ const Header = ({ user, onSignOut, isAnonymous }) => {
         <Box sx={{ flexGrow: 1 }} />
         {!isAnonymous && user && (
           <>
-            <Avatar
-              src={user.photoURL}
-              alt={user.displayName}
+            <IconButton
               onClick={handleClick}
-              sx={{ cursor: 'pointer' }}
+              sx={{
+                width: 40,
+                height: 40,
+                backgroundColor: 'primary.main',
+                color: 'primary.contrastText',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+              }}
             >
-              {getFirstName(user.displayName)[0]}
-            </Avatar>
+              <Typography variant="body1">
+                {getInitial(user.displayName)}
+              </Typography>
+            </IconButton>
             <Menu
               anchorEl={anchorEl}
               open={Boolean(anchorEl)}
