@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../services/firebase';
-import { getUserProgress } from '../services/userProgressManager';
+import { getUserProgress, getConceptsForReview } from '../services/userProgressManager';
+import { getPriority } from '../services/spacedRepetition';
 
 const shuffleArray = (array) => {
   const shuffled = [...array];
@@ -37,33 +38,48 @@ export const useConcepts = (user, conceptFilter, level) => {
           ...doc.data()
         }));
 
+        const conceptsForReview = getConceptsForReview(userProgress, allConcepts);
+
         switch (conceptFilter) {
           case 'new':
-            const attemptedConceptIds = new Set(userProgress.conceptProgress.map(progress => progress.conceptId));
-            conceptsData = allConcepts.filter(concept => !attemptedConceptIds.has(concept.id));
-            break;
-          case 'incorrect':
-            const incorrectConceptIds = new Set(
-              userProgress.conceptProgress
-                .filter(progress => !progress.isCorrect)
-                .map(progress => progress.conceptId)
+            conceptsData = conceptsForReview.filter(concept => 
+              !userProgress.conceptProgress[concept.id] || 
+              userProgress.conceptProgress[concept.id].totalAttempts === 0
             );
-            conceptsData = allConcepts.filter(concept => incorrectConceptIds.has(concept.id));
+            break;
+          case 'review':
+            conceptsData = conceptsForReview.filter(concept => 
+              userProgress.conceptProgress[concept.id] && 
+              userProgress.conceptProgress[concept.id].totalAttempts > 0
+            );
             break;
           case 'all':
           default:
-            conceptsData = allConcepts;
+            conceptsData = conceptsForReview;
             break;
         }
+
+        // Sort concepts by priority
+        conceptsData.sort((a, b) => {
+          const priorityA = getPriority(
+            userProgress.conceptProgress[a.id]?.lastAttempt,
+            userProgress.conceptProgress[a.id]?.nextReview
+          );
+          const priorityB = getPriority(
+            userProgress.conceptProgress[b.id]?.lastAttempt,
+            userProgress.conceptProgress[b.id]?.nextReview
+          );
+          return priorityB - priorityA;
+        });
       } else {
         const conceptsSnapshot = await getDocs(conceptsQuery);
-        conceptsData = conceptsSnapshot.docs.map(doc => ({
+        conceptsData = shuffleArray(conceptsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        }));
+        })));
       }
       
-      setConcepts(shuffleArray(conceptsData));
+      setConcepts(conceptsData);
     } catch (error) {
       console.error("Error loading concepts from Firestore:", error);
       setError('Failed to load concepts. Please try again later.');

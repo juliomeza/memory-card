@@ -13,7 +13,8 @@ const MemoryCardGame = ({
   onScoreUpdate,
   currentIndex,
   totalConcepts,
-  hasStartedCounting
+  hasStartedCounting,
+  nextReviewDate
 }) => {
   if (!currentConcept) {
     return (
@@ -25,6 +26,12 @@ const MemoryCardGame = ({
 
   const thumbUpColor = '#8B5CF6';
   const thumbDownColor = '#4A90E2';
+
+  const formatNextReviewDate = (date) => {
+    if (!date) return 'Not scheduled';
+    const reviewDate = new Date(date.seconds * 1000);
+    return reviewDate.toLocaleDateString();
+  };
 
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
@@ -90,6 +97,11 @@ const MemoryCardGame = ({
             <ThumbDownIcon fontSize="inherit" />
           </IconButton>
         </Box>
+      </Box>
+      <Box mt={2}>
+        <Typography variant="body2" align="center">
+          Next review: {formatNextReviewDate(nextReviewDate)}
+        </Typography>
       </Box>
     </Box>
   );

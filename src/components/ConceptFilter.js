@@ -29,8 +29,8 @@ const ConceptFilter = ({ conceptFilter, onConceptFilterChange }) => {
         <StyledToggleButton value="new" aria-label="new concepts">
           NEW
         </StyledToggleButton>
-        <StyledToggleButton value="incorrect" aria-label="incorrect concepts">
-          INCORRECT
+        <StyledToggleButton value="review" aria-label="review concepts">
+          REVIEW
         </StyledToggleButton>
       </StyledToggleButtonGroup>
     </Box>

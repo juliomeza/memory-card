@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { doc, setDoc, getDoc, updateDoc, arrayUnion, increment } from 'firebase/firestore';
+import { doc, setDoc, getDoc, updateDoc, arrayUnion, increment, serverTimestamp } from 'firebase/firestore';
 
 export const initializeUserProgress = async (userId) => {
   const userProgressRef = doc(db, 'userProgress', userId);
@@ -9,7 +9,7 @@ export const initializeUserProgress = async (userId) => {
     await setDoc(userProgressRef, {
       totalAttempts: 0,
       correctAttempts: 0,
-      conceptProgress: []
+      conceptProgress: {}
     });
   }
 };
@@ -17,14 +17,32 @@ export const initializeUserProgress = async (userId) => {
 export const updateUserProgress = async (userId, conceptId, isCorrect) => {
   const userProgressRef = doc(db, 'userProgress', userId);
 
+  const userProgressDoc = await getDoc(userProgressRef);
+  const userData = userProgressDoc.data();
+  
+  const conceptProgress = userData.conceptProgress[conceptId] || {
+    totalAttempts: 0,
+    correctAttempts: 0,
+    lastAttempt: null,
+    nextReview: null,
+    interval: 1, // initial interval in days
+  };
+
+  conceptProgress.totalAttempts++;
+  if (isCorrect) {
+    conceptProgress.correctAttempts++;
+    conceptProgress.interval *= 2; // increase interval
+  } else {
+    conceptProgress.interval = 1; // reset interval
+  }
+
+  conceptProgress.lastAttempt = serverTimestamp();
+  conceptProgress.nextReview = new Date(Date.now() + conceptProgress.interval * 24 * 60 * 60 * 1000);
+
   await updateDoc(userProgressRef, {
     totalAttempts: increment(1),
     correctAttempts: increment(isCorrect ? 1 : 0),
-    conceptProgress: arrayUnion({
-      conceptId,
-      timestamp: new Date(),
-      isCorrect
-    })
+    [`conceptProgress.${conceptId}`]: conceptProgress
   });
 };
 
@@ -40,18 +58,24 @@ export const getUserProgress = async (userId) => {
 };
 
 export const getConceptPerformance = (userProgress, conceptId) => {
-  if (!userProgress || !userProgress.conceptProgress) return null;
+  if (!userProgress || !userProgress.conceptProgress || !userProgress.conceptProgress[conceptId]) return null;
 
-  const conceptAttempts = userProgress.conceptProgress.filter(
-    attempt => attempt.conceptId === conceptId
-  );
-
-  const totalAttempts = conceptAttempts.length;
-  const correctAttempts = conceptAttempts.filter(attempt => attempt.isCorrect).length;
+  const conceptProgress = userProgress.conceptProgress[conceptId];
 
   return {
-    totalAttempts,
-    correctAttempts,
-    accuracy: totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0
+    totalAttempts: conceptProgress.totalAttempts,
+    correctAttempts: conceptProgress.correctAttempts,
+    accuracy: conceptProgress.totalAttempts > 0 ? (conceptProgress.correctAttempts / conceptProgress.totalAttempts) * 100 : 0,
+    nextReview: conceptProgress.nextReview
   };
+};
+
+export const getConceptsForReview = (userProgress, allConcepts) => {
+  if (!userProgress || !userProgress.conceptProgress) return allConcepts;
+
+  const now = new Date();
+  return allConcepts.filter(concept => {
+    const progress = userProgress.conceptProgress[concept.id];
+    return !progress || !progress.nextReview || new Date(progress.nextReview.toDate()) <= now;
+  });
 };

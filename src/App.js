@@ -4,12 +4,13 @@ import { ThemeProvider } from '@mui/material/styles';
 import { onAuthStateChanged, signOut, signInAnonymously } from 'firebase/auth';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { auth } from './services/firebase';
-import { initializeUserProgress, updateUserProgress, getUserProgress } from './services/userProgressManager';
+import { initializeUserProgress, updateUserProgress, getUserProgress, getConceptsForReview } from './services/userProgressManager';
 import Header from './components/Header';
 import MemoryCardGame from './components/MemoryCardGame';
 import ConceptFilter from './components/ConceptFilter';
 import { useConcepts } from './hooks/useConcepts';
 import appTheme from './styles/appTheme';
+import { shouldReviewConcept, getPriority } from './services/spacedRepetition';
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -28,7 +29,7 @@ const App = () => {
   const [groupIndex, setGroupIndex] = useState(0);
   const [showGroupSummary, setShowGroupSummary] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
-  const [incorrectConcepts, setIncorrectConcepts] = useState([]);
+  const [remainingConcepts, setRemainingConcepts] = useState([]);
   const [hasStartedCounting, setHasStartedCounting] = useState(false);
   const [progressCount, setProgressCount] = useState(0);
 
@@ -86,7 +87,7 @@ const App = () => {
     if (concepts.length > 0) {
       const newGroup = concepts.slice(groupIndex * 5, (groupIndex + 1) * 5);
       setCurrentGroup(newGroup);
-      setIncorrectConcepts(newGroup);
+      setRemainingConcepts(newGroup);
       setCurrentConceptIndex(0);
       setCorrectCount(0);
       setShowGroupSummary(false);
@@ -94,7 +95,7 @@ const App = () => {
       setProgressCount(0);
     } else {
       setCurrentGroup([]);
-      setIncorrectConcepts([]);
+      setRemainingConcepts([]);
       setCurrentConceptIndex(0);
       setCorrectCount(0);
       setShowGroupSummary(false);
@@ -105,18 +106,12 @@ const App = () => {
 
   const handleNextGroup = useCallback(() => {
     if ((groupIndex + 1) * 5 < concepts.length) {
-      setGroupIndex(groupIndex + 1);
+      setGroupIndex(prevIndex => prevIndex + 1);
     } else {
       setSnackbarMessage('You have completed all concepts in this level!');
       setSnackbarOpen(true);
       setGroupIndex(0);
     }
-    setCurrentConceptIndex(0);
-    setShowGroupSummary(false);
-    setCorrectCount(0);
-    setIncorrectConcepts([]);
-    setHasStartedCounting(false);
-    setProgressCount(0);
   }, [groupIndex, concepts.length]);
 
   const handleFlip = useCallback(() => {
@@ -124,15 +119,15 @@ const App = () => {
   }, []);
 
   const handleScoreUpdate = useCallback(async (remembered) => {
-    if (user && incorrectConcepts[currentConceptIndex]) {
+    if (user && remainingConcepts[currentConceptIndex]) {
       try {
-        await updateUserProgress(user.uid, incorrectConcepts[currentConceptIndex].id, remembered);
+        await updateUserProgress(user.uid, remainingConcepts[currentConceptIndex].id, remembered);
         const updatedProgress = await getUserProgress(user.uid);
         setUserProgress(updatedProgress);
         
-        let newIncorrectConcepts = [...incorrectConcepts];
+        let newRemainingConcepts = [...remainingConcepts];
         if (remembered) {
-          newIncorrectConcepts.splice(currentConceptIndex, 1);
+          newRemainingConcepts.splice(currentConceptIndex, 1);
           if (!hasStartedCounting) {
             setHasStartedCounting(true);
           }
@@ -140,16 +135,16 @@ const App = () => {
           setCorrectCount(prevCount => prevCount + 1);
         } else {
           // Move the incorrect concept to the end of the array
-          const [incorrectConcept] = newIncorrectConcepts.splice(currentConceptIndex, 1);
-          newIncorrectConcepts.push(incorrectConcept);
+          const [incorrectConcept] = newRemainingConcepts.splice(currentConceptIndex, 1);
+          newRemainingConcepts.push(incorrectConcept);
         }
         
-        setIncorrectConcepts(newIncorrectConcepts);
+        setRemainingConcepts(newRemainingConcepts);
         
-        if (newIncorrectConcepts.length === 0) {
+        if (newRemainingConcepts.length === 0) {
           setShowGroupSummary(true);
         } else {
-          setCurrentConceptIndex(0); // Always reset to the first incorrect concept
+          setCurrentConceptIndex(0); // Always reset to the first remaining concept
         }
         
         setIsFlipped(false);
@@ -159,7 +154,7 @@ const App = () => {
         setSnackbarOpen(true);
       }
     }
-  }, [user, incorrectConcepts, currentConceptIndex, hasStartedCounting]);
+  }, [user, remainingConcepts, currentConceptIndex, hasStartedCounting]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -190,7 +185,7 @@ const App = () => {
     setCurrentConceptIndex(0);
     setShowGroupSummary(false);
     setCorrectCount(0);
-    setIncorrectConcepts([]);
+    setRemainingConcepts([]);
     setIsFlipped(false);
     setHasStartedCounting(false);
     setProgressCount(0);
@@ -257,9 +252,9 @@ const App = () => {
                   </Typography>
                 ) : showGroupSummary ? (
                   <GroupSummary />
-                ) : incorrectConcepts.length > 0 ? (
+                ) : remainingConcepts.length > 0 ? (
                   <MemoryCardGame 
-                    currentConcept={incorrectConcepts[currentConceptIndex]}
+                    currentConcept={remainingConcepts[currentConceptIndex]}
                     isFlipped={isFlipped}
                     onFlip={handleFlip}
                     hasVoted={false}
@@ -267,10 +262,11 @@ const App = () => {
                     currentIndex={progressCount}
                     totalConcepts={currentGroup.length}
                     hasStartedCounting={hasStartedCounting}
+                    nextReviewDate={userProgress?.conceptProgress[remainingConcepts[currentConceptIndex].id]?.nextReview}
                   />
                 ) : (
                   <Typography variant="h6" align="center" my={4}>
-                    No concepts available for the selected filter and level.
+                    No concepts available for review at this time.
                   </Typography>
                 )}
               </>
