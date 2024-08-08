@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, CircularProgress, Box, Snackbar, Typography } from '@mui/material';
+import { Container, CircularProgress, Box, Snackbar, Typography, Button } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { onAuthStateChanged, signOut, signInAnonymously } from 'firebase/auth';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -11,22 +11,25 @@ import ConceptFilter from './components/ConceptFilter';
 import { useConcepts } from './hooks/useConcepts';
 import appTheme from './styles/appTheme';
 
-
 const App = () => {
   const [user, setUser] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [hasVoted, setHasVoted] = useState(false);
   const [currentConceptIndex, setCurrentConceptIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [conceptFilter, setConceptFilter] = useState('all');
   const [userProgress, setUserProgress] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
+  const [level, setLevel] = useState(1000);
+  const [currentGroup, setCurrentGroup] = useState([]);
+  const [groupIndex, setGroupIndex] = useState(0);
+  const [groupResponses, setGroupResponses] = useState(Array(5).fill(false));
+  const [showGroupSummary, setShowGroupSummary] = useState(false);
 
-  const { concepts, isLoading, error } = useConcepts(user, conceptFilter);
+  const { concepts, isLoading, error } = useConcepts(user, conceptFilter, level);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -54,7 +57,6 @@ const App = () => {
           const progress = await getUserProgress(currentUser.uid);
           setUserProgress(progress);
         } else {
-          // Si no hay usuario, iniciar sesión anónimamente
           const anonymousUser = await signInAnonymously(auth);
           setUser(anonymousUser.user);
           setIsAnonymous(true);
@@ -77,29 +79,62 @@ const App = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (concepts.length > 0) {
+      setCurrentGroup(concepts.slice(groupIndex * 5, (groupIndex + 1) * 5));
+      setGroupResponses(Array(5).fill(false));
+      setCurrentConceptIndex(0);
+    }
+  }, [concepts, groupIndex]);
+
+  const handleNextGroup = useCallback(() => {
+    if ((groupIndex + 1) * 5 < concepts.length) {
+      setGroupIndex(groupIndex + 1);
+      setCurrentConceptIndex(0);
+      setGroupResponses(Array(5).fill(false));
+      setShowGroupSummary(false);
+    } else {
+      setSnackbarMessage('You have completed all concepts in this level!');
+      setSnackbarOpen(true);
+    }
+  }, [groupIndex, concepts.length]);
+
   const handleFlip = useCallback(() => {
     setIsFlipped(prev => !prev);
   }, []);
 
   const handleScoreUpdate = useCallback(async (remembered) => {
-    if (!hasVoted && user) {
+    if (user) {
       try {
-        await updateUserProgress(user.uid, concepts[currentConceptIndex].id, remembered);
+        await updateUserProgress(user.uid, currentGroup[currentConceptIndex].id, remembered);
         const updatedProgress = await getUserProgress(user.uid);
         setUserProgress(updatedProgress);
-        setHasVoted(true);
-        setTimeout(() => {
-          setCurrentConceptIndex((prevIndex) => (prevIndex + 1) % concepts.length);
-          setIsFlipped(false);
-          setHasVoted(false);
-        }, 500);
+        
+        const newGroupResponses = [...groupResponses];
+        newGroupResponses[currentConceptIndex] = remembered;
+        setGroupResponses(newGroupResponses);
+        
+        if (newGroupResponses.every(Boolean)) {
+          setShowGroupSummary(true);
+        } else {
+          // Encontrar la siguiente flashcard incorrecta
+          const nextIncorrectIndex = newGroupResponses.findIndex((response, index) => !response && index > currentConceptIndex);
+          if (nextIncorrectIndex !== -1) {
+            setCurrentConceptIndex(nextIncorrectIndex);
+          } else {
+            // Si no hay más incorrectas después de la actual, volver al principio
+            setCurrentConceptIndex(newGroupResponses.findIndex(response => !response));
+          }
+        }
+        
+        setIsFlipped(false);
       } catch (error) {
         console.error("Error updating score:", error);
         setSnackbarMessage('Failed to update score. Please try again.');
         setSnackbarOpen(true);
       }
     }
-  }, [user, hasVoted, concepts, currentConceptIndex]);
+  }, [user, currentGroup, currentConceptIndex, groupResponses]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -116,9 +151,24 @@ const App = () => {
   const handleConceptFilterChange = (event, newFilter) => {
     if (newFilter !== null) {
       setConceptFilter(newFilter);
+      setGroupIndex(0);
       setCurrentConceptIndex(0);
+      setGroupResponses(Array(5).fill(false));
+      setShowGroupSummary(false);
     }
   };
+
+  const GroupSummary = () => (
+    <Box textAlign="center" my={4}>
+      <Typography variant="h6">Group Complete!</Typography>
+      <Typography>
+        Correct: 5 / 5
+      </Typography>
+      <Button variant="contained" onClick={handleNextGroup} sx={{ mt: 2 }}>
+        Next Group
+      </Button>
+    </Box>
+  );
 
   if (isAuthLoading) {
     return (
@@ -129,6 +179,8 @@ const App = () => {
       </ThemeProvider>
     );
   }
+
+  const correctCount = groupResponses.filter(Boolean).length;
 
   return (
     <GoogleOAuthProvider clientId="415342274871-60o0kom8akiemvbaberut99auqsq9fhj.apps.googleusercontent.com">
@@ -154,19 +206,22 @@ const App = () => {
                   <Typography variant="h6" color="error" align="center" my={4}>
                     {error}
                   </Typography>
-                ) : concepts.length > 0 ? (
+                ) : showGroupSummary ? (
+                  <GroupSummary />
+                ) : currentGroup.length > 0 ? (
                   <MemoryCardGame 
-                    currentConcept={concepts[currentConceptIndex]}
+                    currentConcept={currentGroup[currentConceptIndex]}
                     isFlipped={isFlipped}
                     onFlip={handleFlip}
-                    hasVoted={hasVoted}
+                    hasVoted={false}
                     onScoreUpdate={handleScoreUpdate}
-                    currentIndex={currentConceptIndex}
-                    totalConcepts={concepts.length}
+                    currentIndex={correctCount > 0 ? correctCount - 1 : 0}
+                    totalConcepts={5}
+                    remainingIncorrect={5 - correctCount}
                   />
                 ) : (
                   <Typography variant="h6" align="center" my={4}>
-                    No concepts available for the selected filter.
+                    No concepts available for the selected filter and level.
                   </Typography>
                 )}
               </>

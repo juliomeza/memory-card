@@ -1,9 +1,9 @@
 import React from 'react';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import MemoryCard from './MemoryCard';
-import ProgressBar from './ProgressBar';
+import ProgressCircle from './ProgressCircle';
 
 const MemoryCardGame = ({
   currentConcept,
@@ -12,11 +12,11 @@ const MemoryCardGame = ({
   hasVoted,
   onScoreUpdate,
   currentIndex,
-  totalConcepts
+  totalConcepts,
+  remainingIncorrect
 }) => {
-  // Definimos los nuevos colores para los botones
-  const thumbUpColor = '#8B5CF6'; // Tono morado suave
-  const thumbDownColor = '#5EEAD4'; // Verde azulado
+  const thumbUpColor = '#8B5CF6';
+  const thumbDownColor = '#5EEAD4';
 
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
@@ -37,7 +37,7 @@ const MemoryCardGame = ({
             fontSize: '2rem',
             color: thumbUpColor,
             '&:hover': {
-              backgroundColor: `${thumbUpColor}20`, // 20% de opacidad para el efecto hover
+              backgroundColor: `${thumbUpColor}20`,
             },
           }}
         >
@@ -51,16 +51,21 @@ const MemoryCardGame = ({
             fontSize: '2rem',
             color: thumbDownColor,
             '&:hover': {
-              backgroundColor: `${thumbDownColor}20`, // 20% de opacidad para el efecto hover
+              backgroundColor: `${thumbDownColor}20`,
             },
           }}
         >
           <ThumbDownIcon fontSize="inherit" />
         </IconButton>
       </Box>
-      <Box width="100%" mt={2}>
-        <ProgressBar currentIndex={currentIndex} totalConcepts={totalConcepts} />
+      <Box mt={2}>
+        <ProgressCircle current={currentIndex} total={totalConcepts} />
       </Box>
+      {remainingIncorrect > 0 && (
+        <Typography variant="body2" mt={2}>
+          Remaining incorrect: {remainingIncorrect}
+        </Typography>
+      )}
     </Box>
   );
 };

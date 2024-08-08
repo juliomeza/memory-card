@@ -4,6 +4,7 @@ const { getFirestore, collection, writeBatch, doc } = require('firebase/firestor
 const fs = require('fs');
 const path = require('path');
 
+// Tu configuración de Firebase
 const firebaseConfig = {
     apiKey: "AIzaSyD9D9el_Y-B1avd4OiYc3OF-L4R2Ttoeo0",
     authDomain: "memory-card-944f2.firebaseapp.com",
@@ -11,11 +12,14 @@ const firebaseConfig = {
     storageBucket: "memory-card-944f2.appspot.com",
     messagingSenderId: "415342274871",
     appId: "1:415342274871:web:694bf31a1cd8501e2a92b2"
+
 };
 
+// Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// Lee el archivo JSON
 const conceptsData = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'src', 'data', 'concepts.json'), 'utf8'));
 
 async function uploadConcepts() {
@@ -23,13 +27,8 @@ async function uploadConcepts() {
   const conceptsRef = collection(db, 'concepts');
 
   conceptsData.concepts.forEach((concept) => {
-    const docRef = doc(conceptsRef, concept.id.toString());
-    batch.set(docRef, {
-      concept: concept.concept,
-      explanation: concept.explanation,
-      group: concept.group,
-      level: concept.groupIDNumber
-    });
+    const docRef = doc(conceptsRef);
+    batch.set(docRef, concept);
   });
 
   try {
