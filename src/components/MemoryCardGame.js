@@ -12,11 +12,10 @@ const MemoryCardGame = ({
   hasVoted,
   onScoreUpdate,
   currentIndex,
-  totalConcepts,
-  remainingIncorrect
+  totalConcepts
 }) => {
   const thumbUpColor = '#8B5CF6';
-  const thumbDownColor = '#5EEAD4';
+  const thumbDownColor = '#4A90E2';
 
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
@@ -61,11 +60,6 @@ const MemoryCardGame = ({
       <Box mt={2}>
         <ProgressCircle current={currentIndex} total={totalConcepts} />
       </Box>
-      {remainingIncorrect > 0 && (
-        <Typography variant="body2" mt={2}>
-          Remaining incorrect: {remainingIncorrect}
-        </Typography>
-      )}
     </Box>
   );
 };

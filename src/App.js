@@ -28,6 +28,7 @@ const App = () => {
   const [groupIndex, setGroupIndex] = useState(0);
   const [groupResponses, setGroupResponses] = useState(Array(5).fill(false));
   const [showGroupSummary, setShowGroupSummary] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
 
   const { concepts, isLoading, error } = useConcepts(user, conceptFilter, level);
 
@@ -84,6 +85,7 @@ const App = () => {
       setCurrentGroup(concepts.slice(groupIndex * 5, (groupIndex + 1) * 5));
       setGroupResponses(Array(5).fill(false));
       setCurrentConceptIndex(0);
+      setCorrectCount(0);
     }
   }, [concepts, groupIndex]);
 
@@ -93,6 +95,7 @@ const App = () => {
       setCurrentConceptIndex(0);
       setGroupResponses(Array(5).fill(false));
       setShowGroupSummary(false);
+      setCorrectCount(0);
     } else {
       setSnackbarMessage('You have completed all concepts in this level!');
       setSnackbarOpen(true);
@@ -113,6 +116,10 @@ const App = () => {
         const newGroupResponses = [...groupResponses];
         newGroupResponses[currentConceptIndex] = remembered;
         setGroupResponses(newGroupResponses);
+        
+        if (remembered) {
+          setCorrectCount(prevCount => prevCount + 1);
+        }
         
         if (newGroupResponses.every(Boolean)) {
           setShowGroupSummary(true);
@@ -155,6 +162,7 @@ const App = () => {
       setCurrentConceptIndex(0);
       setGroupResponses(Array(5).fill(false));
       setShowGroupSummary(false);
+      setCorrectCount(0);
     }
   };
 
@@ -179,8 +187,6 @@ const App = () => {
       </ThemeProvider>
     );
   }
-
-  const correctCount = groupResponses.filter(Boolean).length;
 
   return (
     <GoogleOAuthProvider clientId="415342274871-60o0kom8akiemvbaberut99auqsq9fhj.apps.googleusercontent.com">
@@ -215,9 +221,8 @@ const App = () => {
                     onFlip={handleFlip}
                     hasVoted={false}
                     onScoreUpdate={handleScoreUpdate}
-                    currentIndex={correctCount > 0 ? correctCount - 1 : 0}
+                    currentIndex={correctCount}
                     totalConcepts={5}
-                    remainingIncorrect={5 - correctCount}
                   />
                 ) : (
                   <Typography variant="h6" align="center" my={4}>
