@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, IconButton } from '@mui/material';
+import { Box, IconButton, Typography } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
 import MemoryCard from './MemoryCard';
@@ -12,14 +12,23 @@ const MemoryCardGame = ({
   hasVoted,
   onScoreUpdate,
   currentIndex,
-  totalConcepts
+  totalConcepts,
+  hasStartedCounting
 }) => {
+  if (!currentConcept) {
+    return (
+      <Typography variant="h6" align="center" my={4}>
+        No concept available. Please try a different filter or level.
+      </Typography>
+    );
+  }
+
   const thumbUpColor = '#8B5CF6';
   const thumbDownColor = '#4A90E2';
 
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
-      <Box my={2} width="100%" maxWidth="300px"> {/* Ajusta el maxWidth según el tamaño de tu flashcard */}
+      <Box my={2} width="100%" maxWidth="300px">
         <MemoryCard 
           concept={currentConcept.concept} 
           explanation={currentConcept.explanation}
@@ -35,7 +44,7 @@ const MemoryCardGame = ({
         maxWidth="300px" 
         mt={2} 
         mb={2}
-        px={1} // Añadimos un poco de padding horizontal
+        px={1}
       >
         <Box width="33%" display="flex" justifyContent="flex-start">
           <IconButton 
@@ -48,13 +57,19 @@ const MemoryCardGame = ({
               '&:hover': {
                 backgroundColor: `${thumbUpColor}20`,
               },
+              '&.Mui-disabled': {
+                color: `${thumbUpColor}50`,
+              },
             }}
           >
             <ThumbUpIcon fontSize="inherit" />
           </IconButton>
         </Box>
         <Box width="33%" display="flex" justifyContent="center">
-          <ProgressCircle current={currentIndex} total={totalConcepts} />
+          <ProgressCircle 
+            current={hasStartedCounting ? currentIndex : 0} 
+            total={totalConcepts} 
+          />
         </Box>
         <Box width="33%" display="flex" justifyContent="flex-end">
           <IconButton 
@@ -66,6 +81,9 @@ const MemoryCardGame = ({
               color: thumbDownColor,
               '&:hover': {
                 backgroundColor: `${thumbDownColor}20`,
+              },
+              '&.Mui-disabled': {
+                color: `${thumbDownColor}50`,
               },
             }}
           >

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { getUserProgress } from '../services/userProgressManager';
 
@@ -12,7 +12,7 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
-export const useConcepts = (user, conceptFilter) => {
+export const useConcepts = (user, conceptFilter, level) => {
   const [concepts, setConcepts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,11 +22,16 @@ export const useConcepts = (user, conceptFilter) => {
     setError(null);
     try {
       const conceptsRef = collection(db, 'concepts');
+      let conceptsQuery = query(
+        conceptsRef, 
+        where("level", ">=", level),
+        where("level", "<", level + 1000)
+      );
       let conceptsData = [];
 
       if (user) {
         const userProgress = await getUserProgress(user.uid);
-        const allConceptsSnapshot = await getDocs(conceptsRef);
+        const allConceptsSnapshot = await getDocs(conceptsQuery);
         const allConcepts = allConceptsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -51,7 +56,7 @@ export const useConcepts = (user, conceptFilter) => {
             break;
         }
       } else {
-        const conceptsSnapshot = await getDocs(conceptsRef);
+        const conceptsSnapshot = await getDocs(conceptsQuery);
         conceptsData = conceptsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
@@ -65,13 +70,11 @@ export const useConcepts = (user, conceptFilter) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, conceptFilter]);
+  }, [user, conceptFilter, level]);
 
   useEffect(() => {
-    if (user) {
-      loadConcepts();
-    }
-  }, [user, loadConcepts]);
+    loadConcepts();
+  }, [loadConcepts]);
 
   return { concepts, isLoading, error, loadConcepts };
 };

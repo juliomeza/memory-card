@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Container, CircularProgress, Box, Snackbar, Typography, Button } from '@mui/material';
+import { Container, CircularProgress, Box, Snackbar, Typography, Button, Select, MenuItem } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { onAuthStateChanged, signOut, signInAnonymously } from 'firebase/auth';
 import { GoogleOAuthProvider } from '@react-oauth/google';
@@ -26,9 +26,11 @@ const App = () => {
   const [level, setLevel] = useState(1000);
   const [currentGroup, setCurrentGroup] = useState([]);
   const [groupIndex, setGroupIndex] = useState(0);
-  const [groupResponses, setGroupResponses] = useState(Array(5).fill(false));
   const [showGroupSummary, setShowGroupSummary] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
+  const [incorrectConcepts, setIncorrectConcepts] = useState([]);
+  const [hasStartedCounting, setHasStartedCounting] = useState(false);
+  const [progressCount, setProgressCount] = useState(0);
 
   const { concepts, isLoading, error } = useConcepts(user, conceptFilter, level);
 
@@ -82,24 +84,39 @@ const App = () => {
 
   useEffect(() => {
     if (concepts.length > 0) {
-      setCurrentGroup(concepts.slice(groupIndex * 5, (groupIndex + 1) * 5));
-      setGroupResponses(Array(5).fill(false));
+      const newGroup = concepts.slice(groupIndex * 5, (groupIndex + 1) * 5);
+      setCurrentGroup(newGroup);
+      setIncorrectConcepts(newGroup);
       setCurrentConceptIndex(0);
       setCorrectCount(0);
+      setShowGroupSummary(false);
+      setHasStartedCounting(false);
+      setProgressCount(0);
+    } else {
+      setCurrentGroup([]);
+      setIncorrectConcepts([]);
+      setCurrentConceptIndex(0);
+      setCorrectCount(0);
+      setShowGroupSummary(false);
+      setHasStartedCounting(false);
+      setProgressCount(0);
     }
   }, [concepts, groupIndex]);
 
   const handleNextGroup = useCallback(() => {
     if ((groupIndex + 1) * 5 < concepts.length) {
       setGroupIndex(groupIndex + 1);
-      setCurrentConceptIndex(0);
-      setGroupResponses(Array(5).fill(false));
-      setShowGroupSummary(false);
-      setCorrectCount(0);
     } else {
       setSnackbarMessage('You have completed all concepts in this level!');
       setSnackbarOpen(true);
+      setGroupIndex(0);
     }
+    setCurrentConceptIndex(0);
+    setShowGroupSummary(false);
+    setCorrectCount(0);
+    setIncorrectConcepts([]);
+    setHasStartedCounting(false);
+    setProgressCount(0);
   }, [groupIndex, concepts.length]);
 
   const handleFlip = useCallback(() => {
@@ -107,31 +124,32 @@ const App = () => {
   }, []);
 
   const handleScoreUpdate = useCallback(async (remembered) => {
-    if (user) {
+    if (user && incorrectConcepts[currentConceptIndex]) {
       try {
-        await updateUserProgress(user.uid, currentGroup[currentConceptIndex].id, remembered);
+        await updateUserProgress(user.uid, incorrectConcepts[currentConceptIndex].id, remembered);
         const updatedProgress = await getUserProgress(user.uid);
         setUserProgress(updatedProgress);
         
-        const newGroupResponses = [...groupResponses];
-        newGroupResponses[currentConceptIndex] = remembered;
-        setGroupResponses(newGroupResponses);
-        
+        let newIncorrectConcepts = [...incorrectConcepts];
         if (remembered) {
+          newIncorrectConcepts.splice(currentConceptIndex, 1);
+          if (!hasStartedCounting) {
+            setHasStartedCounting(true);
+          }
+          setProgressCount(prevCount => prevCount + 1);
           setCorrectCount(prevCount => prevCount + 1);
+        } else {
+          // Move the incorrect concept to the end of the array
+          const [incorrectConcept] = newIncorrectConcepts.splice(currentConceptIndex, 1);
+          newIncorrectConcepts.push(incorrectConcept);
         }
         
-        if (newGroupResponses.every(Boolean)) {
+        setIncorrectConcepts(newIncorrectConcepts);
+        
+        if (newIncorrectConcepts.length === 0) {
           setShowGroupSummary(true);
         } else {
-          // Encontrar la siguiente flashcard incorrecta
-          const nextIncorrectIndex = newGroupResponses.findIndex((response, index) => !response && index > currentConceptIndex);
-          if (nextIncorrectIndex !== -1) {
-            setCurrentConceptIndex(nextIncorrectIndex);
-          } else {
-            // Si no hay más incorrectas después de la actual, volver al principio
-            setCurrentConceptIndex(newGroupResponses.findIndex(response => !response));
-          }
+          setCurrentConceptIndex(0); // Always reset to the first incorrect concept
         }
         
         setIsFlipped(false);
@@ -141,7 +159,7 @@ const App = () => {
         setSnackbarOpen(true);
       }
     }
-  }, [user, currentGroup, currentConceptIndex, groupResponses]);
+  }, [user, incorrectConcepts, currentConceptIndex, hasStartedCounting]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -158,19 +176,31 @@ const App = () => {
   const handleConceptFilterChange = (event, newFilter) => {
     if (newFilter !== null) {
       setConceptFilter(newFilter);
-      setGroupIndex(0);
-      setCurrentConceptIndex(0);
-      setGroupResponses(Array(5).fill(false));
-      setShowGroupSummary(false);
-      setCorrectCount(0);
+      resetGameState();
     }
+  };
+
+  const handleLevelChange = (event) => {
+    setLevel(event.target.value);
+    resetGameState();
+  };
+
+  const resetGameState = () => {
+    setGroupIndex(0);
+    setCurrentConceptIndex(0);
+    setShowGroupSummary(false);
+    setCorrectCount(0);
+    setIncorrectConcepts([]);
+    setIsFlipped(false);
+    setHasStartedCounting(false);
+    setProgressCount(0);
   };
 
   const GroupSummary = () => (
     <Box textAlign="center" my={4}>
       <Typography variant="h6">Group Complete!</Typography>
       <Typography>
-        Correct: 5 / 5
+        Correct: {correctCount} / {currentGroup.length}
       </Typography>
       <Button variant="contained" onClick={handleNextGroup} sx={{ mt: 2 }}>
         Next Group
@@ -200,10 +230,23 @@ const App = () => {
               </Typography>
             ) : (
               <>
-                <ConceptFilter
-                  conceptFilter={conceptFilter}
-                  onConceptFilterChange={handleConceptFilterChange}
-                />
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <ConceptFilter
+                    conceptFilter={conceptFilter}
+                    onConceptFilterChange={handleConceptFilterChange}
+                  />
+                  <Select
+                    value={level}
+                    onChange={handleLevelChange}
+                    displayEmpty
+                    inputProps={{ 'aria-label': 'Select level' }}
+                  >
+                    <MenuItem value={1000}>Level 1000</MenuItem>
+                    <MenuItem value={2000}>Level 2000</MenuItem>
+                    <MenuItem value={3000}>Level 3000</MenuItem>
+                    <MenuItem value={4000}>Level 4000</MenuItem>
+                  </Select>
+                </Box>
                 {isLoading ? (
                   <Box display="flex" justifyContent="center" alignItems="center" height="50vh">
                     <CircularProgress />
@@ -214,15 +257,16 @@ const App = () => {
                   </Typography>
                 ) : showGroupSummary ? (
                   <GroupSummary />
-                ) : currentGroup.length > 0 ? (
+                ) : incorrectConcepts.length > 0 ? (
                   <MemoryCardGame 
-                    currentConcept={currentGroup[currentConceptIndex]}
+                    currentConcept={incorrectConcepts[currentConceptIndex]}
                     isFlipped={isFlipped}
                     onFlip={handleFlip}
                     hasVoted={false}
                     onScoreUpdate={handleScoreUpdate}
-                    currentIndex={correctCount}
-                    totalConcepts={5}
+                    currentIndex={progressCount}
+                    totalConcepts={currentGroup.length}
+                    hasStartedCounting={hasStartedCounting}
                   />
                 ) : (
                   <Typography variant="h6" align="center" my={4}>
