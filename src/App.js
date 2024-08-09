@@ -33,7 +33,7 @@ const App = () => {
   const [starColorIndex, setStarColorIndex] = useState(0);
   const [levelProgress, setLevelProgress] = useState({ completed: 0, total: 0 });
 
-  const { concepts, isLoading, error } = useConcepts(user, level);
+  const { concepts, isLoading, error, loadConcepts } = useConcepts(user, level);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -192,6 +192,7 @@ const App = () => {
       const progress = await getLevelProgress(user.uid, newLevel);
       setLevelProgress(progress);
     }
+    loadConcepts(); // Reload concepts for the new level
   };
 
   const resetGameState = () => {
@@ -208,7 +209,7 @@ const App = () => {
 
   const GroupSummary = () => (
     <Box textAlign="center" my={4}>
-      <RotatingStar colorIndex={starColorIndex} size={60} />
+      <RotatingStar color={['bronze', 'silver', 'gold', 'sapphire', 'titanium'][starColorIndex]} size={60} />
       <Typography variant="h6" mt={2}>Group Complete!</Typography>
       <Typography>
         Correct: {correctCount} / {currentGroup.length}

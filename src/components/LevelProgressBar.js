@@ -11,12 +11,15 @@ const ProgressContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
 }));
 
-const ProgressSegment = styled(Box)(({ theme, isCompleted }) => ({
+const ProgressSegment = styled(Box)(({ theme }) => ({
   flex: 1,
   height: '100%',
-  backgroundColor: isCompleted ? theme.palette.text.primary : 'transparent',
+  backgroundColor: 'transparent',
   border: `1px solid ${theme.palette.grey[400]}`,
   transition: 'background-color 0.3s ease',
+  '&[data-completed="true"]': {
+    backgroundColor: theme.palette.text.primary,
+  },
 }));
 
 const LevelProgressBar = ({ totalSegments, completedSegments }) => {
@@ -24,7 +27,10 @@ const LevelProgressBar = ({ totalSegments, completedSegments }) => {
     <Tooltip title={`Progress: ${completedSegments}/${totalSegments} groups`} arrow>
       <ProgressContainer>
         {[...Array(totalSegments)].map((_, index) => (
-          <ProgressSegment key={index} isCompleted={index < completedSegments} />
+          <ProgressSegment 
+            key={index} 
+            data-completed={index < completedSegments}
+          />
         ))}
       </ProgressContainer>
     </Tooltip>
