@@ -4,7 +4,7 @@ import { ThemeProvider } from '@mui/material/styles';
 import { onAuthStateChanged, signOut, signInAnonymously } from 'firebase/auth';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { auth } from './services/firebase';
-import { initializeUserProgress, updateUserProgress, getUserProgress } from './services/userProgressManager';
+import { initializeUserProgress, updateUserProgress, getUserProgress, updateLevelProgress, getLevelProgress } from './services/userProgressManager';
 import Header from './components/Header';
 import MemoryCardGame from './components/MemoryCardGame';
 import RotatingStar from './components/RotatingStar';
@@ -31,6 +31,7 @@ const App = () => {
   const [hasStartedCounting, setHasStartedCounting] = useState(false);
   const [progressCount, setProgressCount] = useState(0);
   const [starColorIndex, setStarColorIndex] = useState(0);
+  const [levelProgress, setLevelProgress] = useState({ completed: 0, total: 0 });
 
   const { concepts, isLoading, error } = useConcepts(user, level);
 
@@ -59,6 +60,8 @@ const App = () => {
           await initializeUserProgress(currentUser.uid);
           const progress = await getUserProgress(currentUser.uid);
           setUserProgress(progress);
+          const levelProg = await getLevelProgress(currentUser.uid, level);
+          setLevelProgress(levelProg);
         } else {
           const anonymousUser = await signInAnonymously(auth);
           setUser(anonymousUser.user);
@@ -66,6 +69,8 @@ const App = () => {
           await initializeUserProgress(anonymousUser.user.uid);
           const progress = await getUserProgress(anonymousUser.user.uid);
           setUserProgress(progress);
+          const levelProg = await getLevelProgress(anonymousUser.user.uid, level);
+          setLevelProgress(levelProg);
         }
       } catch (error) {
         console.error("Error during auth state change:", error);
@@ -80,7 +85,7 @@ const App = () => {
       window.removeEventListener('offline', handleOffline);
       unsubscribe();
     };
-  }, []);
+  }, [level]);
 
   useEffect(() => {
     if (concepts.length > 0) {
@@ -92,6 +97,8 @@ const App = () => {
       setShowGroupSummary(false);
       setHasStartedCounting(false);
       setProgressCount(0);
+      const totalGroups = Math.ceil(concepts.length / 5);
+      setLevelProgress(prev => ({ ...prev, total: totalGroups }));
     } else {
       setCurrentGroup([]);
       setRemainingConcepts([]);
@@ -100,20 +107,29 @@ const App = () => {
       setShowGroupSummary(false);
       setHasStartedCounting(false);
       setProgressCount(0);
+      setLevelProgress({ completed: 0, total: 0 });
     }
   }, [concepts, groupIndex]);
 
-  const handleNextGroup = useCallback(() => {
+  const handleNextGroup = useCallback(async () => {
     if ((groupIndex + 1) * 5 < concepts.length) {
       setGroupIndex(prevIndex => prevIndex + 1);
       setStarColorIndex(prevIndex => (prevIndex + 1) % 5);
+      const newCompleted = levelProgress.completed + 1;
+      setLevelProgress(prev => ({ ...prev, completed: newCompleted }));
+      if (user) {
+        await updateLevelProgress(user.uid, level, newCompleted, levelProgress.total);
+      }
     } else {
       setSnackbarMessage('You have completed all concepts in this level!');
       setSnackbarOpen(true);
       setGroupIndex(0);
       setStarColorIndex(0);
+      if (user) {
+        await updateLevelProgress(user.uid, level, levelProgress.total, levelProgress.total);
+      }
     }
-  }, [groupIndex, concepts.length]);
+  }, [groupIndex, concepts.length, user, level, levelProgress]);
 
   const handleFlip = useCallback(() => {
     setIsFlipped(prev => !prev);
@@ -168,9 +184,14 @@ const App = () => {
     }
   }, []);
 
-  const handleLevelChange = (event) => {
-    setLevel(event.target.value);
+  const handleLevelChange = async (event) => {
+    const newLevel = event.target.value;
+    setLevel(newLevel);
     resetGameState();
+    if (user) {
+      const progress = await getLevelProgress(user.uid, newLevel);
+      setLevelProgress(progress);
+    }
   };
 
   const resetGameState = () => {
@@ -212,7 +233,12 @@ const App = () => {
     <GoogleOAuthProvider clientId="415342274871-60o0kom8akiemvbaberut99auqsq9fhj.apps.googleusercontent.com">
       <ThemeProvider theme={appTheme}>
         <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-          <Header user={user} onSignOut={handleSignOut} isAnonymous={isAnonymous} />
+          <Header 
+            user={user} 
+            onSignOut={handleSignOut} 
+            isAnonymous={isAnonymous}
+            levelProgress={levelProgress}
+          />
           <Container maxWidth="sm" sx={{ mt: 4, flexGrow: 1 }}>
             {authError ? (
               <Typography variant="h6" color="error" align="center" my={4}>

@@ -9,7 +9,8 @@ export const initializeUserProgress = async (userId) => {
     await setDoc(userProgressRef, {
       totalAttempts: 0,
       correctAttempts: 0,
-      conceptProgress: {}
+      conceptProgress: {},
+      levelProgress: {}
     });
   }
 };
@@ -46,6 +47,13 @@ export const updateUserProgress = async (userId, conceptId, isCorrect) => {
   });
 };
 
+export const updateLevelProgress = async (userId, level, completed, total) => {
+  const userProgressRef = doc(db, 'userProgress', userId);
+  await updateDoc(userProgressRef, {
+    [`levelProgress.${level}`]: { completed, total }
+  });
+};
+
 export const getUserProgress = async (userId) => {
   const userProgressRef = doc(db, 'userProgress', userId);
   const userProgressDoc = await getDoc(userProgressRef);
@@ -55,6 +63,11 @@ export const getUserProgress = async (userId) => {
   } else {
     return null;
   }
+};
+
+export const getLevelProgress = async (userId, level) => {
+  const userProgress = await getUserProgress(userId);
+  return userProgress?.levelProgress?.[level] || { completed: 0, total: 0 };
 };
 
 export const getConceptPerformance = (userProgress, conceptId) => {

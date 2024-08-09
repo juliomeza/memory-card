@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { AppBar, Toolbar, Box, IconButton, Menu, MenuItem, Avatar, Typography } from '@mui/material';
+import { AppBar, Toolbar, Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import LoginButton from './LoginButton';
+import LevelProgressBar from './LevelProgressBar';
 
-const Header = ({ user, onSignOut, isAnonymous }) => {
+const Header = ({ user, onSignOut, isAnonymous, levelProgress }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
   const getFirstName = (fullName) => {
@@ -38,7 +39,12 @@ const Header = ({ user, onSignOut, isAnonymous }) => {
         >
           <MenuIcon />
         </IconButton>
-        <Box sx={{ flexGrow: 1 }} />
+        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
+          <LevelProgressBar 
+            totalSegments={levelProgress.total} 
+            completedSegments={levelProgress.completed} 
+          />
+        </Box>
         {!isAnonymous && user && (
           <>
             <IconButton
