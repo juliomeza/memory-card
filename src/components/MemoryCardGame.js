@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box, IconButton, Typography } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import ThumbDownIcon from '@mui/icons-material/ThumbDown';
@@ -9,17 +9,22 @@ const MemoryCardGame = ({
   currentConcept,
   isFlipped,
   onFlip,
-  hasVoted,
   onScoreUpdate,
   currentIndex,
   totalConcepts,
   hasStartedCounting,
-  nextReviewDate
 }) => {
+  const [localCurrentIndex, setLocalCurrentIndex] = useState(currentIndex);
+  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
+
+  useEffect(() => {
+    setLocalCurrentIndex(currentIndex);
+  }, [currentIndex]);
+
   if (!currentConcept) {
     return (
       <Typography variant="h6" align="center" my={4}>
-        No concept available. Please try a different filter or level.
+        No concept available. Please try a different level.
       </Typography>
     );
   }
@@ -27,10 +32,20 @@ const MemoryCardGame = ({
   const thumbUpColor = '#8B5CF6';
   const thumbDownColor = '#4A90E2';
 
-  const formatNextReviewDate = (date) => {
-    if (!date) return 'Not scheduled';
-    const reviewDate = new Date(date.seconds * 1000);
-    return reviewDate.toLocaleDateString();
+  const handleScoreUpdate = async (remembered) => {
+    if (isButtonDisabled) return;
+    
+    setIsButtonDisabled(true);
+    
+    if (remembered && localCurrentIndex < totalConcepts) {
+      setLocalCurrentIndex(prev => Math.min(prev + 1, totalConcepts));
+    }
+    
+    await onScoreUpdate(remembered);
+    
+    setTimeout(() => {
+      setIsButtonDisabled(false);
+    }, 300);
   };
 
   return (
@@ -55,9 +70,9 @@ const MemoryCardGame = ({
       >
         <Box width="33%" display="flex" justifyContent="flex-start">
           <IconButton 
-            onClick={() => onScoreUpdate(true)} 
+            onClick={() => handleScoreUpdate(true)} 
             aria-label="Remembered"
-            disabled={hasVoted}
+            disabled={isButtonDisabled}
             sx={{ 
               fontSize: '2rem',
               color: thumbUpColor,
@@ -74,15 +89,15 @@ const MemoryCardGame = ({
         </Box>
         <Box width="33%" display="flex" justifyContent="center">
           <ProgressCircle 
-            current={hasStartedCounting ? currentIndex : 0} 
+            current={hasStartedCounting ? localCurrentIndex : 0} 
             total={totalConcepts} 
           />
         </Box>
         <Box width="33%" display="flex" justifyContent="flex-end">
           <IconButton 
-            onClick={() => onScoreUpdate(false)} 
+            onClick={() => handleScoreUpdate(false)} 
             aria-label="Didn't remember"
-            disabled={hasVoted}
+            disabled={isButtonDisabled}
             sx={{ 
               fontSize: '2rem',
               color: thumbDownColor,
@@ -97,11 +112,6 @@ const MemoryCardGame = ({
             <ThumbDownIcon fontSize="inherit" />
           </IconButton>
         </Box>
-      </Box>
-      <Box mt={2}>
-        <Typography variant="body2" align="center">
-          Next review: {formatNextReviewDate(nextReviewDate)}
-        </Typography>
       </Box>
     </Box>
   );

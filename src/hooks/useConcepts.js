@@ -4,16 +4,7 @@ import { db } from '../services/firebase';
 import { getUserProgress, getConceptsForReview } from '../services/userProgressManager';
 import { getPriority } from '../services/spacedRepetition';
 
-const shuffleArray = (array) => {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
-
-export const useConcepts = (user, conceptFilter, level) => {
+export const useConcepts = (user, level) => {
   const [concepts, setConcepts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -23,11 +14,18 @@ export const useConcepts = (user, conceptFilter, level) => {
     setError(null);
     try {
       const conceptsRef = collection(db, 'concepts');
-      let conceptsQuery = query(
-        conceptsRef, 
-        where("level", ">=", level),
-        where("level", "<", level + 1000)
-      );
+      let conceptsQuery;
+
+      if (level) {
+        conceptsQuery = query(
+          conceptsRef, 
+          where("level", ">=", level),
+          where("level", "<", level + 1000)
+        );
+      } else {
+        conceptsQuery = conceptsRef; // If no level is specified, get all concepts
+      }
+
       let conceptsData = [];
 
       if (user) {
@@ -38,26 +36,7 @@ export const useConcepts = (user, conceptFilter, level) => {
           ...doc.data()
         }));
 
-        const conceptsForReview = getConceptsForReview(userProgress, allConcepts);
-
-        switch (conceptFilter) {
-          case 'new':
-            conceptsData = conceptsForReview.filter(concept => 
-              !userProgress.conceptProgress[concept.id] || 
-              userProgress.conceptProgress[concept.id].totalAttempts === 0
-            );
-            break;
-          case 'review':
-            conceptsData = conceptsForReview.filter(concept => 
-              userProgress.conceptProgress[concept.id] && 
-              userProgress.conceptProgress[concept.id].totalAttempts > 0
-            );
-            break;
-          case 'all':
-          default:
-            conceptsData = conceptsForReview;
-            break;
-        }
+        conceptsData = getConceptsForReview(userProgress, allConcepts);
 
         // Sort concepts by priority
         conceptsData.sort((a, b) => {
@@ -73,10 +52,10 @@ export const useConcepts = (user, conceptFilter, level) => {
         });
       } else {
         const conceptsSnapshot = await getDocs(conceptsQuery);
-        conceptsData = shuffleArray(conceptsSnapshot.docs.map(doc => ({
+        conceptsData = conceptsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        })));
+        }));
       }
       
       setConcepts(conceptsData);
@@ -86,7 +65,7 @@ export const useConcepts = (user, conceptFilter, level) => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, conceptFilter, level]);
+  }, [user, level]);
 
   useEffect(() => {
     loadConcepts();

@@ -4,13 +4,12 @@ import { ThemeProvider } from '@mui/material/styles';
 import { onAuthStateChanged, signOut, signInAnonymously } from 'firebase/auth';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { auth } from './services/firebase';
-import { initializeUserProgress, updateUserProgress, getUserProgress, getConceptsForReview } from './services/userProgressManager';
+import { initializeUserProgress, updateUserProgress, getUserProgress } from './services/userProgressManager';
 import Header from './components/Header';
 import MemoryCardGame from './components/MemoryCardGame';
-import ConceptFilter from './components/ConceptFilter';
+import RotatingStar from './components/RotatingStar';
 import { useConcepts } from './hooks/useConcepts';
 import appTheme from './styles/appTheme';
-import { shouldReviewConcept, getPriority } from './services/spacedRepetition';
 
 const App = () => {
   const [user, setUser] = useState(null);
@@ -20,7 +19,6 @@ const App = () => {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [currentConceptIndex, setCurrentConceptIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [conceptFilter, setConceptFilter] = useState('all');
   const [userProgress, setUserProgress] = useState(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
@@ -32,8 +30,9 @@ const App = () => {
   const [remainingConcepts, setRemainingConcepts] = useState([]);
   const [hasStartedCounting, setHasStartedCounting] = useState(false);
   const [progressCount, setProgressCount] = useState(0);
+  const [starColorIndex, setStarColorIndex] = useState(0);
 
-  const { concepts, isLoading, error } = useConcepts(user, conceptFilter, level);
+  const { concepts, isLoading, error } = useConcepts(user, level);
 
   useEffect(() => {
     const handleOnline = () => {
@@ -107,10 +106,12 @@ const App = () => {
   const handleNextGroup = useCallback(() => {
     if ((groupIndex + 1) * 5 < concepts.length) {
       setGroupIndex(prevIndex => prevIndex + 1);
+      setStarColorIndex(prevIndex => (prevIndex + 1) % 5);
     } else {
       setSnackbarMessage('You have completed all concepts in this level!');
       setSnackbarOpen(true);
       setGroupIndex(0);
+      setStarColorIndex(0);
     }
   }, [groupIndex, concepts.length]);
 
@@ -131,10 +132,9 @@ const App = () => {
           if (!hasStartedCounting) {
             setHasStartedCounting(true);
           }
-          setProgressCount(prevCount => prevCount + 1);
-          setCorrectCount(prevCount => prevCount + 1);
+          setProgressCount(prevCount => Math.min(prevCount + 1, currentGroup.length));
+          setCorrectCount(prevCount => Math.min(prevCount + 1, currentGroup.length));
         } else {
-          // Move the incorrect concept to the end of the array
           const [incorrectConcept] = newRemainingConcepts.splice(currentConceptIndex, 1);
           newRemainingConcepts.push(incorrectConcept);
         }
@@ -144,7 +144,7 @@ const App = () => {
         if (newRemainingConcepts.length === 0) {
           setShowGroupSummary(true);
         } else {
-          setCurrentConceptIndex(0); // Always reset to the first remaining concept
+          setCurrentConceptIndex(0);
         }
         
         setIsFlipped(false);
@@ -154,7 +154,7 @@ const App = () => {
         setSnackbarOpen(true);
       }
     }
-  }, [user, remainingConcepts, currentConceptIndex, hasStartedCounting]);
+  }, [user, remainingConcepts, currentConceptIndex, hasStartedCounting, currentGroup.length]);
 
   const handleSignOut = useCallback(async () => {
     try {
@@ -167,13 +167,6 @@ const App = () => {
       setSnackbarOpen(true);
     }
   }, []);
-
-  const handleConceptFilterChange = (event, newFilter) => {
-    if (newFilter !== null) {
-      setConceptFilter(newFilter);
-      resetGameState();
-    }
-  };
 
   const handleLevelChange = (event) => {
     setLevel(event.target.value);
@@ -189,11 +182,13 @@ const App = () => {
     setIsFlipped(false);
     setHasStartedCounting(false);
     setProgressCount(0);
+    setStarColorIndex(0);
   };
 
   const GroupSummary = () => (
     <Box textAlign="center" my={4}>
-      <Typography variant="h6">Group Complete!</Typography>
+      <RotatingStar colorIndex={starColorIndex} size={60} />
+      <Typography variant="h6" mt={2}>Group Complete!</Typography>
       <Typography>
         Correct: {correctCount} / {currentGroup.length}
       </Typography>
@@ -216,20 +211,16 @@ const App = () => {
   return (
     <GoogleOAuthProvider clientId="415342274871-60o0kom8akiemvbaberut99auqsq9fhj.apps.googleusercontent.com">
       <ThemeProvider theme={appTheme}>
-        <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+        <Box sx={{ bgcolor: 'background.default', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
           <Header user={user} onSignOut={handleSignOut} isAnonymous={isAnonymous} />
-          <Container maxWidth="sm" sx={{ mt: 4 }}>
+          <Container maxWidth="sm" sx={{ mt: 4, flexGrow: 1 }}>
             {authError ? (
               <Typography variant="h6" color="error" align="center" my={4}>
                 {authError}
               </Typography>
             ) : (
               <>
-                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <ConceptFilter
-                    conceptFilter={conceptFilter}
-                    onConceptFilterChange={handleConceptFilterChange}
-                  />
+                <Box display="flex" justifyContent="center" alignItems="center" mb={2}>
                   <Select
                     value={level}
                     onChange={handleLevelChange}
@@ -257,12 +248,10 @@ const App = () => {
                     currentConcept={remainingConcepts[currentConceptIndex]}
                     isFlipped={isFlipped}
                     onFlip={handleFlip}
-                    hasVoted={false}
                     onScoreUpdate={handleScoreUpdate}
                     currentIndex={progressCount}
                     totalConcepts={currentGroup.length}
                     hasStartedCounting={hasStartedCounting}
-                    nextReviewDate={userProgress?.conceptProgress[remainingConcepts[currentConceptIndex].id]?.nextReview}
                   />
                 ) : (
                   <Typography variant="h6" align="center" my={4}>
