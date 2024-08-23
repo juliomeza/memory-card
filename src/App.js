@@ -7,6 +7,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google';
 import Header from './components/Header';
 import MemoryCardGame from './components/MemoryCardGame';
 import GroupSummary from './components/GroupSummary';
+import EmptyState from './components/EmptyState';
 import { useAuth } from './hooks/useAuth';
 import { useGameLogic } from './hooks/useGameLogic';
 import appTheme from './styles/appTheme';
@@ -59,9 +60,7 @@ const App = () => {
           />
           <Container maxWidth="sm" sx={{ mt: 4, flexGrow: 1 }}>
             {authError ? (
-              <Typography variant="h6" color="error" align="center" my={4}>
-                {authError}
-              </Typography>
+              <EmptyState message={authError} />
             ) : (
               <>
                 <Box display="flex" justifyContent="center" alignItems="center" mb={2}>
@@ -95,9 +94,7 @@ const App = () => {
                     hasStartedCounting={hasStartedCounting}
                   />
                 ) : (
-                  <Typography variant="h6" align="center" my={4}>
-                    No concepts available for review at this time.
-                  </Typography>
+                  <EmptyState message="No concepts available for review at this time." />
                 )}
               </>
             )}
