@@ -1,12 +1,17 @@
-// src/components/
-
 import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { AppBar, Toolbar, Box, IconButton, Menu, MenuItem, Typography } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import LoginButton from './LoginButton';
 import LevelProgressBar from './LevelProgressBar';
+import { selectUser, selectIsAnonymous, selectLevelProgress } from '../redux/selectors';
+import { signOutUser } from '../redux/slices/authSlice';
 
-const Header = ({ user, onSignOut, isAnonymous, levelProgress }) => {
+const Header = () => {
+  const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  const isAnonymous = useSelector(selectIsAnonymous);
+  const levelProgress = useSelector(selectLevelProgress);
   const [anchorEl, setAnchorEl] = useState(null);
 
   const getFirstName = (fullName) => {
@@ -26,7 +31,7 @@ const Header = ({ user, onSignOut, isAnonymous, levelProgress }) => {
   };
 
   const handleSignOut = () => {
-    onSignOut();
+    dispatch(signOutUser());
     handleClose();
   };
 

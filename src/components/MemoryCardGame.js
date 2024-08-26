@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Box } from '@mui/material';
 import ConceptCard from './ConceptCard';
 import GameControls from './GameControls';
 import EmptyState from './EmptyState';
+import { updateScore } from '../redux/slices/gameSlice';
+import { selectRemainingConcepts, selectCorrectCount, selectHasStartedCounting } from '../redux/selectors';
 
-const MemoryCardGame = ({
-  currentConcept,
-  onScoreUpdate,
-  currentIndex,
-  totalConcepts,
-  hasStartedCounting,
-}) => {
+const MemoryCardGame = () => {
+  const dispatch = useDispatch();
+  const remainingConcepts = useSelector(selectRemainingConcepts);
+  const correctCount = useSelector(selectCorrectCount);
+  const hasStartedCounting = useSelector(selectHasStartedCounting);
+
   const [isFlipped, setIsFlipped] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
+  const currentConcept = remainingConcepts[0];
+
   useEffect(() => {
-    // Reset isFlipped when currentConcept changes
     setIsFlipped(false);
   }, [currentConcept]);
 
@@ -33,7 +36,10 @@ const MemoryCardGame = ({
     
     setIsButtonDisabled(true);
     
-    await onScoreUpdate(remembered);
+    dispatch(updateScore({ 
+      conceptId: currentConcept.id, 
+      isCorrect: remembered 
+    }));
     
     setTimeout(() => {
       setIsButtonDisabled(false);
@@ -54,8 +60,8 @@ const MemoryCardGame = ({
         onThumbUp={() => handleScoreUpdate(true)}
         onThumbDown={() => handleScoreUpdate(false)}
         isButtonDisabled={isButtonDisabled}
-        current={hasStartedCounting ? currentIndex : 0}
-        total={totalConcepts}
+        current={hasStartedCounting ? correctCount : 0}
+        total={5}
         thumbUpColor={thumbUpColor}
         thumbDownColor={thumbDownColor}
       />
