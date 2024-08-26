@@ -1,4 +1,4 @@
-// src/hooks/useGameLogic.js
+// src/hooks/
 
 import { useState, useEffect, useCallback } from 'react';
 import { updateUserProgress, getUserProgress, updateLevelProgress, getLevelProgress } from '../services/userProgressManager';

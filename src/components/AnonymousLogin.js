@@ -1,3 +1,5 @@
+// src/components/
+
 import React, { useState } from 'react';
 import { Button, Snackbar } from '@mui/material';
 import { signInAnonymously } from 'firebase/auth';

@@ -1,3 +1,5 @@
+// src/components/
+
 import React from 'react';
 import { Box, Typography, useTheme } from '@mui/material';
 

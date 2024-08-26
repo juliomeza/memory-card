@@ -1,4 +1,4 @@
-// src/services/gameService.js
+// src/hooks/
 
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from './firebase';

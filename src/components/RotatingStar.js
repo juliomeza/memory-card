@@ -1,3 +1,5 @@
+// src/components/
+
 import React from 'react';
 import { SvgIcon, keyframes } from '@mui/material';
 

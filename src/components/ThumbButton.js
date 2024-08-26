@@ -1,3 +1,5 @@
+// src/components/
+
 import React from 'react';
 import { IconButton } from '@mui/material';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';

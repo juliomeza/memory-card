@@ -1,3 +1,5 @@
+// src/components/
+
 import React, { useState } from 'react';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, Box, Typography } from '@mui/material';
 import { GoogleLogin } from '@react-oauth/google';

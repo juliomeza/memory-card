@@ -1,3 +1,5 @@
+// src/components/
+
 import React, { useState } from 'react';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';

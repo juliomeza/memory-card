@@ -1,3 +1,5 @@
+// src/hooks/
+
 import { useState, useCallback, useEffect } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../services/firebase';

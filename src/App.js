@@ -1,4 +1,4 @@
-// src/App.js
+// src/
 
 import React, { useState } from 'react';
 import { Container, CircularProgress, Box, Snackbar, Typography, Button, Select, MenuItem } from '@mui/material';

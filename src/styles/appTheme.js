@@ -1,3 +1,5 @@
+// src/styles/
+
 import { createTheme } from '@mui/material/styles';
 
 const appTheme = createTheme({

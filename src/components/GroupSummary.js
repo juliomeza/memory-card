@@ -1,4 +1,4 @@
-// src/components/GroupSummary.js
+// src/components/
 
 import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
