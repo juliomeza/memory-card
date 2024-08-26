@@ -7,6 +7,21 @@ import { getPriority } from './spacedRepetition';
 
 export const getConceptsForReview = async (userId, level) => {
   try {
+    if (!userId) {
+      console.log('No user ID provided, returning all concepts for the level');
+      const conceptsRef = collection(db, 'concepts');
+      const conceptsQuery = query(
+        conceptsRef, 
+        where("level", ">=", level),
+        where("level", "<", level + 1000)
+      );
+      const conceptsSnapshot = await getDocs(conceptsQuery);
+      return conceptsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+    }
+
     const userProgress = await getUserProgress(userId);
     const conceptsRef = collection(db, 'concepts');
     const conceptsQuery = query(
@@ -20,6 +35,11 @@ export const getConceptsForReview = async (userId, level) => {
       id: doc.id,
       ...doc.data()
     }));
+
+    if (!userProgress || !userProgress.conceptProgress) {
+      console.log('No user progress found, returning all concepts');
+      return allConcepts;
+    }
 
     const conceptsForReview = allConcepts.filter(concept => {
       const progress = userProgress.conceptProgress[concept.id];
@@ -42,6 +62,6 @@ export const getConceptsForReview = async (userId, level) => {
     return conceptsForReview;
   } catch (error) {
     console.error("Error getting concepts for review:", error);
-    throw error;
+    return []; // Return an empty array instead of throwing an error
   }
 };

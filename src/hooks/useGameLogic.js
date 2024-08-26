@@ -18,15 +18,17 @@ export const useGameLogic = (user, level) => {
 
   useEffect(() => {
     const loadConcepts = async () => {
+      const loadedConcepts = await getConceptsForReview(user?.uid, level);
+      setConcepts(loadedConcepts);
+      const newGroup = loadedConcepts.slice(0, 5);
+      setCurrentGroup(newGroup);
+      setRemainingConcepts(newGroup);
+      const totalGroups = Math.ceil(loadedConcepts.length / 5);
       if (user) {
-        const loadedConcepts = await getConceptsForReview(user.uid, level);
-        setConcepts(loadedConcepts);
-        const newGroup = loadedConcepts.slice(0, 5);
-        setCurrentGroup(newGroup);
-        setRemainingConcepts(newGroup);
-        const totalGroups = Math.ceil(loadedConcepts.length / 5);
         const progress = await getLevelProgress(user.uid, level);
         setLevelProgress({ ...progress, total: totalGroups });
+      } else {
+        setLevelProgress({ completed: 0, total: totalGroups });
       }
     };
 
@@ -83,6 +85,26 @@ export const useGameLogic = (user, level) => {
       } catch (error) {
         console.error("Error updating score:", error);
         // Handle error (e.g., show a notification)
+      }
+    } else {
+      // Si no hay usuario, simplemente actualizamos el estado local
+      let newRemainingConcepts = [...remainingConcepts];
+      if (remembered) {
+        newRemainingConcepts.shift();
+        if (!hasStartedCounting) {
+          setHasStartedCounting(true);
+        }
+        setProgressCount(prevCount => Math.min(prevCount + 1, currentGroup.length));
+        setCorrectCount(prevCount => Math.min(prevCount + 1, currentGroup.length));
+      } else {
+        const [incorrectConcept] = newRemainingConcepts.splice(0, 1);
+        newRemainingConcepts.push(incorrectConcept);
+      }
+      
+      setRemainingConcepts(newRemainingConcepts);
+      
+      if (newRemainingConcepts.length === 0) {
+        setShowGroupSummary(true);
       }
     }
   }, [user, remainingConcepts, hasStartedCounting, currentGroup.length]);

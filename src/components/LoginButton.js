@@ -1,4 +1,4 @@
-// src/components/
+// src/components/LoginButton.js
 
 import React, { useState } from 'react';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';

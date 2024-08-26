@@ -100,6 +100,10 @@ export const updateLevelProgress = async (userId, level, completed, total) => {
 
 // Get user progress data
 export const getUserProgress = async (userId) => {
+  if (!userId) {
+    console.log('No user ID provided, returning null');
+    return null;
+  }
   try {
     const userProgressRef = doc(db, 'userProgress', userId);
     const userProgressDoc = await getDoc(userProgressRef);
@@ -112,7 +116,7 @@ export const getUserProgress = async (userId) => {
     }
   } catch (error) {
     console.error('Error getting user progress:', error);
-    throw error; // Rethrow the error for the caller to handle
+    return null; // Return null instead of throwing an error
   }
 };
 
