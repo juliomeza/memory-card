@@ -1,33 +1,22 @@
-import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { Container, CircularProgress, Box, Select, MenuItem } from '@mui/material';
+import React, { useState } from 'react';
+import { Container, CircularProgress, Box, Snackbar, Select, MenuItem } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Header from './components/Header';
 import MemoryCardGame from './components/MemoryCardGame';
 import GroupSummary from './components/GroupSummary';
 import EmptyState from './components/EmptyState';
+import { useAuth } from './hooks/useAuth';
+import { useGameLogic } from './hooks/useGameLogic';
 import appTheme from './styles/appTheme';
-import { initializeAuth, signOutUser } from './redux/slices/authSlice';
-import { initializeGame, setLevel, updateScore, nextGroup } from './redux/slices/gameSlice';
-import { 
-  selectUser, 
-  selectIsAnonymous, 
-  selectIsAuthLoading, 
-  selectAuthError,
-  selectGameData
-} from './redux/selectors';
 
 const App = () => {
-  const dispatch = useDispatch();
-  const user = useSelector(selectUser);
-  const isAnonymous = useSelector(selectIsAnonymous);
-  const isAuthLoading = useSelector(selectIsAuthLoading);
-  const authError = useSelector(selectAuthError);
-  const gameData = useSelector(selectGameData);
+  const [level, setLevel] = useState(1000);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [isFlipped, setIsFlipped] = useState(false);
 
+  const { user, isAnonymous, isAuthLoading, authError, handleSignOut } = useAuth();
   const { 
-    level, 
     currentGroup, 
     showGroupSummary, 
     correctCount, 
@@ -35,43 +24,18 @@ const App = () => {
     hasStartedCounting,
     progressCount,
     starColorIndex,
-    isLoading: isGameLoading,
-    levelProgress
-  } = gameData;
+    levelProgress,
+    handleNextGroup,
+    handleScoreUpdate
+  } = useGameLogic(user, level);
 
-  useEffect(() => {
-    dispatch(initializeAuth());
-  }, [dispatch]);
-
-  useEffect(() => {
-    dispatch(initializeGame({ userId: user?.uid, level }));
-  }, [dispatch, user, level]);
-
-  const handleSignOut = () => {
-    dispatch(signOutUser());
-  };
+  const handleFlip = () => setIsFlipped(prev => !prev);
 
   const handleLevelChange = (event) => {
-    const newLevel = event.target.value;
-    dispatch(setLevel(newLevel));
-    dispatch(initializeGame({ userId: user?.uid, level: newLevel }));
+    setLevel(event.target.value);
   };
 
-  const handleScoreUpdate = (remembered) => {
-    if (remainingConcepts.length > 0) {
-      dispatch(updateScore({ 
-        userId: user?.uid, 
-        conceptId: remainingConcepts[0].id, 
-        isCorrect: remembered 
-      }));
-    }
-  };
-
-  const handleNextGroup = () => {
-    dispatch(nextGroup({ userId: user?.uid, level }));
-  };
-
-  if (isAuthLoading || isGameLoading) {
+  if (isAuthLoading) {
     return (
       <ThemeProvider theme={appTheme}>
         <Box display="flex" justifyContent="center" alignItems="center" height="100vh">
@@ -116,12 +80,14 @@ const App = () => {
                     starColorIndex={starColorIndex}
                     onNextGroup={handleNextGroup}
                   />
-                ) : remainingConcepts && remainingConcepts.length > 0 ? (
+                ) : remainingConcepts.length > 0 ? (
                   <MemoryCardGame 
                     currentConcept={remainingConcepts[0]}
+                    isFlipped={isFlipped}
+                    onFlip={handleFlip}
                     onScoreUpdate={handleScoreUpdate}
-                    currentIndex={correctCount}
-                    totalConcepts={5}
+                    currentIndex={progressCount}
+                    totalConcepts={currentGroup.length}
                     hasStartedCounting={hasStartedCounting}
                   />
                 ) : (
@@ -129,6 +95,12 @@ const App = () => {
                 )}
               </>
             )}
+            <Snackbar
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+              open={snackbarOpen}
+              autoHideDuration={6000}
+              onClose={() => setSnackbarOpen(false)}
+            />
           </Container>
         </Box>
       </ThemeProvider>
