@@ -1,5 +1,3 @@
-// src/components/
-
 import React, { useState, useEffect } from 'react';
 import { Box } from '@mui/material';
 import ConceptCard from './ConceptCard';
@@ -8,19 +6,18 @@ import EmptyState from './EmptyState';
 
 const MemoryCardGame = ({
   currentConcept,
-  isFlipped,
-  onFlip,
   onScoreUpdate,
   currentIndex,
   totalConcepts,
   hasStartedCounting,
 }) => {
-  const [localCurrentIndex, setLocalCurrentIndex] = useState(currentIndex);
+  const [isFlipped, setIsFlipped] = useState(false);
   const [isButtonDisabled, setIsButtonDisabled] = useState(false);
 
   useEffect(() => {
-    setLocalCurrentIndex(currentIndex);
-  }, [currentIndex]);
+    // Reset isFlipped when currentConcept changes
+    setIsFlipped(false);
+  }, [currentConcept]);
 
   if (!currentConcept) {
     return <EmptyState message="No concept available. Please try a different level." />;
@@ -29,14 +26,12 @@ const MemoryCardGame = ({
   const thumbUpColor = '#8B5CF6';
   const thumbDownColor = '#4A90E2';
 
+  const handleFlip = () => setIsFlipped(prev => !prev);
+
   const handleScoreUpdate = async (remembered) => {
     if (isButtonDisabled) return;
     
     setIsButtonDisabled(true);
-    
-    if (remembered && localCurrentIndex < totalConcepts) {
-      setLocalCurrentIndex(prev => Math.min(prev + 1, totalConcepts));
-    }
     
     await onScoreUpdate(remembered);
     
@@ -52,14 +47,14 @@ const MemoryCardGame = ({
           concept={currentConcept.concept} 
           explanation={currentConcept.explanation}
           isFlipped={isFlipped}
-          onFlip={onFlip}
+          onFlip={handleFlip}
         />
       </Box>
       <GameControls 
         onThumbUp={() => handleScoreUpdate(true)}
         onThumbDown={() => handleScoreUpdate(false)}
         isButtonDisabled={isButtonDisabled}
-        current={hasStartedCounting ? localCurrentIndex : 0}
+        current={hasStartedCounting ? currentIndex : 0}
         total={totalConcepts}
         thumbUpColor={thumbUpColor}
         thumbDownColor={thumbDownColor}

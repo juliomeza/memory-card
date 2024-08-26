@@ -1,7 +1,5 @@
-// src/
-
 import React, { useState } from 'react';
-import { Container, CircularProgress, Box, Snackbar, Typography, Button, Select, MenuItem } from '@mui/material';
+import { Container, CircularProgress, Box, Snackbar, Select, MenuItem } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Header from './components/Header';
@@ -15,7 +13,6 @@ import appTheme from './styles/appTheme';
 const App = () => {
   const [level, setLevel] = useState(1000);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
   const [isFlipped, setIsFlipped] = useState(false);
 
   const { user, isAnonymous, isAuthLoading, authError, handleSignOut } = useAuth();
@@ -103,7 +100,6 @@ const App = () => {
               open={snackbarOpen}
               autoHideDuration={6000}
               onClose={() => setSnackbarOpen(false)}
-              message={snackbarMessage}
             />
           </Container>
         </Box>
