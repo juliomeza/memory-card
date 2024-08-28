@@ -1,5 +1,4 @@
-import configureMockStore from 'redux-mock-store';
-import thunk from 'redux-thunk';
+import { configureStore } from '@reduxjs/toolkit';
 import gameReducer, {
   setLevel,
   clearError,
@@ -8,8 +7,22 @@ import gameReducer, {
   nextGroup
 } from './gameSlice';
 
-const middlewares = [thunk];
-const mockStore = configureMockStore(middlewares);
+jest.mock('../../services/gameService', () => ({
+  getConceptsForReview: jest.fn()
+}));
+
+jest.mock('../../services/userProgressManager', () => ({
+  getLevelProgress: jest.fn(),
+  updateUserProgress: jest.fn(),
+  updateLevelProgress: jest.fn()
+}));
+
+const createMockStore = (initialState) => {
+  return configureStore({
+    reducer: { game: gameReducer },
+    preloadedState: initialState
+  });
+};
 
 describe('gameSlice', () => {
   describe('reducer, actions and selectors', () => {
@@ -33,85 +46,69 @@ describe('gameSlice', () => {
     });
 
     it('should properly set the level', () => {
-      const level = 2000;
-      const nextState = gameReducer(undefined, setLevel(level));
-      expect(nextState.level).toEqual(level);
+      const nextState = gameReducer(undefined, setLevel(2000));
+      expect(nextState.level).toBe(2000);
     });
 
     it('should properly clear the error', () => {
-      const initialState = { ...gameReducer(undefined, {}), error: 'Test error' };
+      const initialState = { ...gameReducer(undefined, {}), error: 'Some error' };
       const nextState = gameReducer(initialState, clearError());
       expect(nextState.error).toBeNull();
     });
   });
 
   describe('async actions', () => {
-    it('creates proper actions when initializeGame is done', () => {
+    it('creates proper actions when initializeGame is done', async () => {
       const mockConcepts = [{ id: '1', concept: 'Test' }];
       const mockLevelProgress = { completed: 0, total: 1 };
-      const expectedActions = [
-        { type: 'game/initializeGame/pending' },
-        { type: 'game/initializeGame/fulfilled', payload: { concepts: mockConcepts, level: 1000, levelProgress: mockLevelProgress } }
-      ];
-      const store = mockStore({});
+      const store = createMockStore({});
 
-      // Mock the necessary functions
-      jest.mock('../../services/gameService', () => ({
-        getConceptsForReview: jest.fn(() => Promise.resolve(mockConcepts)),
-      }));
-      jest.mock('../../services/userProgressManager', () => ({
-        getLevelProgress: jest.fn(() => Promise.resolve(mockLevelProgress)),
-      }));
+      require('../../services/gameService').getConceptsForReview.mockResolvedValue(mockConcepts);
+      require('../../services/userProgressManager').getLevelProgress.mockResolvedValue(mockLevelProgress);
 
-      return store.dispatch(initializeGame({ userId: '123', level: 1000 })).then(() => {
-        expect(store.getActions()).toEqual(expectedActions);
-      });
+      await store.dispatch(initializeGame({ userId: '123', level: 1000 }));
+
+      const state = store.getState().game;
+      expect(state.concepts).toEqual(mockConcepts);
+      expect(state.level).toBe(1000);
+      expect(state.levelProgress).toEqual(mockLevelProgress);
     });
 
-    it('creates proper actions when updateScore is done', () => {
-      const expectedActions = [
-        { type: 'game/updateScore/pending' },
-        { type: 'game/updateScore/fulfilled', payload: true }
-      ];
-      const store = mockStore({
+    it('creates proper actions when updateScore is done', async () => {
+      const initialState = {
         game: {
           correctCount: 0,
           remainingConcepts: [{ id: '1' }]
         }
-      });
+      };
+      const store = createMockStore(initialState);
 
-      // Mock the necessary functions
-      jest.mock('../../services/userProgressManager', () => ({
-        updateUserProgress: jest.fn(() => Promise.resolve()),
-      }));
+      require('../../services/userProgressManager').updateUserProgress.mockResolvedValue();
 
-      return store.dispatch(updateScore({ userId: '123', conceptId: '1', isCorrect: true })).then(() => {
-        expect(store.getActions()).toEqual(expectedActions);
-      });
+      await store.dispatch(updateScore({ userId: '123', conceptId: '1', isCorrect: true }));
+
+      const state = store.getState().game;
+      expect(state.correctCount).toBe(1);
+      expect(state.remainingConcepts).toHaveLength(0);
     });
 
-    it('creates proper actions when nextGroup is done', () => {
-      const mockLevelProgress = { completed: 1, total: 2 };
-      const expectedActions = [
-        { type: 'game/nextGroup/pending' },
-        { type: 'game/nextGroup/fulfilled', payload: { groupIndex: 1, levelProgress: mockLevelProgress } }
-      ];
-      const store = mockStore({
+    it('creates proper actions when nextGroup is done', async () => {
+      const initialState = {
         game: {
           groupIndex: 0,
           concepts: ['1', '2', '3', '4', '5', '6'],
           levelProgress: { completed: 0, total: 2 }
         }
-      });
+      };
+      const store = createMockStore(initialState);
 
-      // Mock the necessary functions
-      jest.mock('../../services/userProgressManager', () => ({
-        updateLevelProgress: jest.fn(() => Promise.resolve()),
-      }));
+      require('../../services/userProgressManager').updateLevelProgress.mockResolvedValue();
 
-      return store.dispatch(nextGroup({ userId: '123', level: 1000 })).then(() => {
-        expect(store.getActions()).toEqual(expectedActions);
-      });
+      await store.dispatch(nextGroup({ userId: '123', level: 1000 }));
+
+      const state = store.getState().game;
+      expect(state.groupIndex).toBe(1);
+      expect(state.levelProgress.completed).toBe(1);
     });
   });
 });

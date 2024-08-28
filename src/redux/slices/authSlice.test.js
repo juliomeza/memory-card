@@ -1,5 +1,4 @@
-import configureMockStore from 'redux-mock-store';
-import thunk from 'redux-thunk';
+import { configureStore } from '@reduxjs/toolkit';
 import authReducer, {
   setUser,
   setAuthError,
@@ -7,8 +6,25 @@ import authReducer, {
   signOutUser
 } from './authSlice';
 
-const middlewares = [thunk];
-const mockStore = configureMockStore(middlewares);
+// Mock Firebase and userProgressManager
+jest.mock('../../services/firebase', () => ({
+  auth: {
+    onAuthStateChanged: jest.fn(),
+    signInAnonymously: jest.fn(),
+    signOut: jest.fn()
+  }
+}));
+
+jest.mock('../../services/userProgressManager', () => ({
+  initializeUserProgress: jest.fn()
+}));
+
+const createMockStore = (initialState = {}) => {
+  return configureStore({
+    reducer: { auth: authReducer },
+    preloadedState: { auth: initialState }
+  });
+};
 
 describe('authSlice', () => {
   describe('reducer, actions and selectors', () => {
@@ -23,57 +39,75 @@ describe('authSlice', () => {
     });
 
     it('should properly set the user', () => {
-      const user = { uid: '123', email: 'test@example.com' };
+      const user = { uid: '123', email: 'test@example.com', isAnonymous: false };
       const nextState = authReducer(undefined, setUser(user));
       expect(nextState.user).toEqual(user);
-      expect(nextState.isAnonymous).toBeFalsy();
+      expect(nextState.isAnonymous).toBe(false);
     });
 
     it('should properly set the auth error', () => {
-      const error = 'Test error';
+      const error = 'Authentication failed';
       const nextState = authReducer(undefined, setAuthError(error));
       expect(nextState.authError).toEqual(error);
     });
   });
 
   describe('async actions', () => {
-    it('creates SET_USER when initializeAuth is done', () => {
-      const expectedActions = [
-        { type: 'auth/initializeAuth/pending' },
-        { type: 'auth/setUser', payload: { uid: '123', isAnonymous: false } },
-        { type: 'auth/initializeAuth/fulfilled' }
-      ];
-      const store = mockStore({});
-
-      // Mock the Firebase auth and Firestore functions
-      jest.mock('firebase/auth', () => ({
-        onAuthStateChanged: (auth, callback) => callback({ uid: '123', isAnonymous: false }),
-      }));
-      jest.mock('../../services/userProgressManager', () => ({
-        initializeUserProgress: jest.fn(() => Promise.resolve()),
-      }));
-
-      return store.dispatch(initializeAuth()).then(() => {
-        expect(store.getActions()).toEqual(expectedActions);
-      });
+    beforeEach(() => {
+      jest.clearAllMocks();
     });
 
-    it('creates SET_USER with null when signOutUser is done', () => {
-      const expectedActions = [
-        { type: 'auth/signOutUser/pending' },
-        { type: 'auth/setUser', payload: null },
-        { type: 'auth/signOutUser/fulfilled' }
-      ];
-      const store = mockStore({});
-
-      // Mock the Firebase auth function
-      jest.mock('firebase/auth', () => ({
-        signOut: jest.fn(() => Promise.resolve()),
-      }));
-
-      return store.dispatch(signOutUser()).then(() => {
-        expect(store.getActions()).toEqual(expectedActions);
+    it('creates SET_USER when initializeAuth is done with existing user', async () => {
+      const mockUser = { uid: '123', isAnonymous: false };
+      const store = createMockStore();
+      
+      require('../../services/firebase').auth.onAuthStateChanged.mockImplementation((callback) => {
+        callback(mockUser);
+        return jest.fn(); // Return a mock unsubscribe function
       });
+
+      await store.dispatch(initializeAuth());
+
+      const state = store.getState().auth;
+      expect(state.user).toEqual(mockUser);
+      expect(state.isAnonymous).toBe(false);
+      expect(state.isAuthLoading).toBe(false);
+    });
+
+    it('creates SET_USER when initializeAuth is done with anonymous user', async () => {
+      const mockAnonymousUser = { uid: 'anon123', isAnonymous: true };
+      const store = createMockStore();
+      
+      require('../../services/firebase').auth.onAuthStateChanged.mockImplementation((callback) => {
+        callback(null);
+        return jest.fn(); // Return a mock unsubscribe function
+      });
+
+      require('../../services/firebase').auth.signInAnonymously.mockResolvedValue({ user: mockAnonymousUser });
+
+      await store.dispatch(initializeAuth());
+
+      const state = store.getState().auth;
+      expect(state.user).toEqual(mockAnonymousUser);
+      expect(state.isAnonymous).toBe(true);
+      expect(state.isAuthLoading).toBe(false);
+    });
+
+    it('creates SET_USER with null when signOutUser is done', async () => {
+      const initialState = {
+        user: { uid: '123' },
+        isAnonymous: false,
+        isAuthLoading: false
+      };
+      const store = createMockStore(initialState);
+
+      require('../../services/firebase').auth.signOut.mockResolvedValue();
+
+      await store.dispatch(signOutUser());
+
+      const state = store.getState().auth;
+      expect(state.user).toBeNull();
+      expect(state.isAnonymous).toBe(true);
     });
   });
 });
