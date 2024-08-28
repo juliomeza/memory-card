@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Box } from '@mui/material';
 import ConceptCard from './ConceptCard';
@@ -22,16 +22,9 @@ const MemoryCardGame = () => {
     setIsFlipped(false);
   }, [currentConcept]);
 
-  if (!currentConcept) {
-    return <EmptyState message="No concept available. Please try a different level." />;
-  }
+  const handleFlip = useCallback(() => setIsFlipped(prev => !prev), []);
 
-  const thumbUpColor = '#8B5CF6';
-  const thumbDownColor = '#4A90E2';
-
-  const handleFlip = () => setIsFlipped(prev => !prev);
-
-  const handleScoreUpdate = async (remembered) => {
+  const handleScoreUpdate = useCallback(async (remembered) => {
     if (isButtonDisabled) return;
     
     setIsButtonDisabled(true);
@@ -43,8 +36,16 @@ const MemoryCardGame = () => {
     
     setTimeout(() => {
       setIsButtonDisabled(false);
+      setIsFlipped(false);  // Aseguramos que la siguiente tarjeta muestre el concepto
     }, 300);
-  };
+  }, [isButtonDisabled, currentConcept, dispatch]);
+
+  const thumbUpColor = '#8B5CF6';
+  const thumbDownColor = '#4A90E2';
+
+  if (!currentConcept) {
+    return <EmptyState message="No concept available. Please try a different level." />;
+  }
 
   return (
     <Box display="flex" flexDirection="column" alignItems="center">
@@ -69,4 +70,4 @@ const MemoryCardGame = () => {
   );
 };
 
-export default MemoryCardGame;
+export default React.memo(MemoryCardGame);
