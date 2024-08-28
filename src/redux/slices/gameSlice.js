@@ -76,11 +76,15 @@ const gameSlice = createSlice({
     showGroupSummary: (state) => {
       state.showGroupSummary = true;
     },
+    clearError: (state) => {
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
       .addCase(initializeGame.pending, (state) => {
         state.isLoading = true;
+        state.error = null;
       })
       .addCase(initializeGame.fulfilled, (state, action) => {
         state.isLoading = false;
@@ -94,12 +98,14 @@ const gameSlice = createSlice({
         state.progressCount = 0;
         state.hasStartedCounting = false;
         state.levelProgress = action.payload.levelProgress;
-        console.log('Game initialized:', state);
+        state.error = null;
       })
       .addCase(initializeGame.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.error.message;
-        console.error('Game initialization failed:', action.error);
+        state.error = action.error.message || 'Failed to initialize game';
+      })
+      .addCase(updateScore.pending, (state) => {
+        state.error = null;
       })
       .addCase(updateScore.fulfilled, (state, action) => {
         if (action.payload) {
@@ -111,7 +117,13 @@ const gameSlice = createSlice({
           state.remainingConcepts = [...rest, incorrectConcept];
         }
         state.hasStartedCounting = true;
-        console.log('Score updated:', state);
+        state.error = null;
+      })
+      .addCase(updateScore.rejected, (state, action) => {
+        state.error = action.error.message || 'Failed to update score';
+      })
+      .addCase(nextGroup.pending, (state) => {
+        state.error = null;
       })
       .addCase(nextGroup.fulfilled, (state, action) => {
         if (action.payload !== null) {
@@ -129,11 +141,14 @@ const gameSlice = createSlice({
           state.showGroupSummary = false;
           state.remainingConcepts = [];
         }
-        console.log('Moved to next group:', state);
+        state.error = null;
+      })
+      .addCase(nextGroup.rejected, (state, action) => {
+        state.error = action.error.message || 'Failed to move to next group';
       });
   },
 });
 
-export const { setLevel } = gameSlice.actions;
+export const { setLevel, clearError } = gameSlice.actions;
 
 export default gameSlice.reducer;

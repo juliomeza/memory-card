@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Container, CircularProgress, Box, Select, MenuItem } from '@mui/material';
+import { Container, CircularProgress, Box, Select, MenuItem, Snackbar } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import Header from './components/Header';
@@ -9,7 +9,7 @@ import GroupSummary from './components/GroupSummary';
 import EmptyState from './components/EmptyState';
 import appTheme from './styles/appTheme';
 import { initializeAuth, signOutUser } from './redux/slices/authSlice';
-import { initializeGame, setLevel, updateScore, nextGroup } from './redux/slices/gameSlice';
+import { initializeGame, setLevel, updateScore, nextGroup, clearError } from './redux/slices/gameSlice';
 import { 
   selectUser, 
   selectIsAnonymous, 
@@ -36,7 +36,8 @@ const App = () => {
     progressCount,
     starColorIndex,
     isLoading: isGameLoading,
-    levelProgress
+    levelProgress,
+    error: gameError
   } = gameData;
 
   useEffect(() => {
@@ -69,6 +70,13 @@ const App = () => {
 
   const handleNextGroup = () => {
     dispatch(nextGroup({ userId: user?.uid, level }));
+  };
+
+  const handleCloseError = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    dispatch(clearError());
   };
 
   if (isAuthLoading || isGameLoading) {
@@ -130,6 +138,12 @@ const App = () => {
               </>
             )}
           </Container>
+          <Snackbar
+            open={!!gameError}
+            autoHideDuration={6000}
+            onClose={handleCloseError}
+            message={gameError}
+          />
         </Box>
       </ThemeProvider>
     </GoogleOAuthProvider>
