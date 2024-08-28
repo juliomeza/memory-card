@@ -41,12 +41,16 @@ const App = () => {
   } = gameData;
 
   useEffect(() => {
-    dispatch(initializeAuth());
-  }, [dispatch]);
+    if (!user) {
+      dispatch(initializeAuth());
+    }
+  }, [dispatch, user]);
 
   useEffect(() => {
-    dispatch(initializeGame({ userId: user?.uid, level }));
-  }, [dispatch, user, level]);
+    if (user && (!remainingConcepts || remainingConcepts.length === 0) && !showGroupSummary) {
+      dispatch(initializeGame({ userId: user.uid, level }));
+    }
+  }, [dispatch, user, level, remainingConcepts, showGroupSummary]);
 
   const handleSignOut = () => {
     dispatch(signOutUser());
@@ -128,7 +132,7 @@ const App = () => {
                   <MemoryCardGame 
                     currentConcept={remainingConcepts[0]}
                     onScoreUpdate={handleScoreUpdate}
-                    currentIndex={correctCount}
+                    currentIndex={progressCount}
                     totalConcepts={5}
                     hasStartedCounting={hasStartedCounting}
                   />
