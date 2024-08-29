@@ -4,7 +4,19 @@ import '@testing-library/jest-dom';
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
-// Configuración global para las pruebas
-jest.mock('firebase/app');
-jest.mock('firebase/auth');
-jest.mock('firebase/firestore');
+// Mock Firebase
+jest.mock('firebase/app', () => ({
+  initializeApp: jest.fn(),
+}));
+
+jest.mock('firebase/auth', () => ({
+  getAuth: jest.fn(),
+  signInWithPopup: jest.fn(),
+  GoogleAuthProvider: jest.fn(),
+}));
+
+jest.mock('firebase/firestore', () => ({
+  initializeFirestore: jest.fn(),
+  persistentLocalCache: jest.fn(),
+  persistentMultipleTabManager: jest.fn(),
+}));
