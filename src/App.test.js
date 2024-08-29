@@ -8,12 +8,12 @@ import App from './App';
 const mockInitializeAuth = jest.fn().mockReturnValue({ type: 'auth/initializeAuth' });
 const mockInitializeGame = jest.fn().mockReturnValue({ type: 'game/initializeGame' });
 
-jest.mock('../src/redux/slices/authSlice', () => ({
-  initializeAuth: mockInitializeAuth,
+jest.mock('./redux/slices/authSlice', () => ({
+  initializeAuth: () => mockInitializeAuth,
 }));
 
-jest.mock('../src/redux/slices/gameSlice', () => ({
-  initializeGame: mockInitializeGame,
+jest.mock('./redux/slices/gameSlice', () => ({
+  initializeGame: () => mockInitializeGame,
 }));
 
 // Mock para GoogleOAuthProvider
@@ -34,18 +34,10 @@ describe('App component', () => {
         auth: mockAuthReducer,
         game: mockGameReducer
       },
-      middleware: (getDefaultMiddleware) => getDefaultMiddleware({
-        thunk: {
-          extraArgument: {
-            initializeAuth: mockInitializeAuth,
-            initializeGame: mockInitializeGame
-          }
-        }
-      })
     });
   });
 
-  test('renders main app element', () => {
+  test('renders App component with header and main content', () => {
     render(
       <Provider store={store}>
         <App />
@@ -55,9 +47,20 @@ describe('App component', () => {
     // Verifica que se haya llamado a initializeAuth
     expect(mockInitializeAuth).toHaveBeenCalled();
 
-    // Verifica que exista un elemento con el rol "main" en el documento
-    // Si tu App no tiene un elemento con role="main", ajusta esto según tu estructura
-    const appElement = screen.getByRole('main', { name: '' });
-    expect(appElement).toBeInTheDocument();
+    // Verifica que exista un header
+    const headerElement = screen.getByRole('banner');
+    expect(headerElement).toBeInTheDocument();
+
+    // Verifica que exista el botón de login
+    const loginButton = screen.getByRole('button', { name: /log in/i });
+    expect(loginButton).toBeInTheDocument();
+
+    // Verifica que exista el selector de nivel
+    const levelSelector = screen.getByRole('combobox', { name: /select level/i });
+    expect(levelSelector).toBeInTheDocument();
+
+    // Verifica que exista el contenido principal (puede ser un texto o un elemento específico)
+    const mainContent = screen.getByText(/no concepts available for review at this time/i);
+    expect(mainContent).toBeInTheDocument();
   });
 });
