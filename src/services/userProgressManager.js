@@ -1,5 +1,3 @@
-// src/services/
-
 import { db } from './firebase';
 import { doc, setDoc, getDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 
@@ -20,7 +18,7 @@ export const initializeUserProgress = async (userId) => {
     }
   } catch (error) {
     console.error('Error initializing user progress:', error);
-    throw error; // Rethrow the error for the caller to handle
+    throw error;
   }
 };
 
@@ -64,14 +62,8 @@ export const updateUserProgress = async (userId, conceptId, isCorrect) => {
 
     console.log('User progress updated successfully');
   } catch (error) {
-    if (error.code === 'permission-denied') {
-      console.error('Permission denied: Check your Firestore security rules');
-    } else if (error.code === 'unavailable') {
-      console.error('Firestore is currently unavailable. Please try again later.');
-    } else {
-      console.error('Error updating user progress:', error);
-    }
-    throw error; // Rethrow the error for the caller to handle
+    console.error('Error updating user progress:', error);
+    throw error;
   }
 };
 
@@ -82,19 +74,20 @@ export const updateLevelProgress = async (userId, level, completed, total) => {
     const userProgressDoc = await getDoc(userProgressRef);
     const currentLevelProgress = userProgressDoc.data()?.levelProgress?.[level] || { completed: 0, total: 0 };
 
-    // Only update 'completed' if it's greater than the current value
+    // Solo actualiza 'completed' si es mayor que el valor actual
     const newCompleted = Math.max(currentLevelProgress.completed, completed);
-    // Only update 'total' if it's different from the current value
-    const newTotal = total !== currentLevelProgress.total ? total : currentLevelProgress.total;
+    // Solo actualiza 'total' si es mayor que el valor actual y no es 0
+    const newTotal = total > currentLevelProgress.total ? total : currentLevelProgress.total;
 
     await updateDoc(userProgressRef, {
       [`levelProgress.${level}`]: { completed: newCompleted, total: newTotal }
     });
 
     console.log(`Level progress updated: Level ${level}, Completed: ${newCompleted}, Total: ${newTotal}`);
+    return { completed: newCompleted, total: newTotal };
   } catch (error) {
     console.error('Error updating level progress:', error);
-    throw error; // Rethrow the error for the caller to handle
+    throw error;
   }
 };
 
@@ -116,7 +109,7 @@ export const getUserProgress = async (userId) => {
     }
   } catch (error) {
     console.error('Error getting user progress:', error);
-    return null; // Return null instead of throwing an error
+    return null;
   }
 };
 
@@ -127,7 +120,7 @@ export const getLevelProgress = async (userId, level) => {
     return userProgress?.levelProgress?.[level] || { completed: 0, total: 0 };
   } catch (error) {
     console.error('Error getting level progress:', error);
-    throw error; // Rethrow the error for the caller to handle
+    throw error;
   }
 };
 

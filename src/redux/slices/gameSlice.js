@@ -10,8 +10,13 @@ export const initializeGame = createAsyncThunk(
     let levelProgress;
     if (userId) {
       levelProgress = await getLevelProgress(userId, level);
-    } else {
-      levelProgress = { completed: 0, total: Math.ceil(concepts.length / 5) };
+    }
+    if (!levelProgress || levelProgress.total === 0) {
+      const totalGroups = Math.ceil(concepts.length / 5);
+      levelProgress = { completed: 0, total: totalGroups };
+      if (userId) {
+        await updateLevelProgress(userId, level, 0, totalGroups);
+      }
     }
     console.log('Level progress:', levelProgress);
     return { concepts, level, levelProgress };
@@ -22,14 +27,26 @@ export const updateScore = createAsyncThunk(
   'game/updateScore',
   async ({ userId, conceptId, isCorrect }, { getState, dispatch }) => {
     console.log('Updating score for user:', userId, 'concept:', conceptId, 'correct:', isCorrect);
-    if (userId) {
-      await updateUserProgress(userId, conceptId, isCorrect);
-    }
     const state = getState().game;
+    let newLevelProgress = null;
+
     if (isCorrect && state.correctCount + 1 === 5) {
       dispatch(gameSlice.actions.showGroupSummary());
+      const newCompleted = state.levelProgress.completed + 1;
+      newLevelProgress = { 
+        completed: newCompleted, 
+        total: state.levelProgress.total 
+      };
+
+      if (userId) {
+        await updateUserProgress(userId, conceptId, isCorrect);
+        await updateLevelProgress(userId, state.level, newCompleted, state.levelProgress.total);
+      }
+    } else if (userId) {
+      await updateUserProgress(userId, conceptId, isCorrect);
     }
-    return isCorrect;
+
+    return { isCorrect, newLevelProgress };
   }
 );
 
@@ -40,13 +57,19 @@ export const nextGroup = createAsyncThunk(
     const newGroupIndex = groupIndex + 1;
     console.log('Moving to next group:', newGroupIndex, 'for user:', userId);
     if (newGroupIndex * 5 < concepts.length) {
-      const newCompleted = newGroupIndex;
-      const newTotal = Math.ceil(concepts.length / 5);
+      let newLevelProgress = { 
+        completed: levelProgress.completed, // Mantener el progreso actual
+        total: levelProgress.total
+      };
       if (userId) {
-        await updateLevelProgress(userId, level, newCompleted, newTotal);
+        // Solo actualizamos en la base de datos, no incrementamos aquí
+        const updatedProgress = await updateLevelProgress(userId, level, newLevelProgress.completed, newLevelProgress.total);
+        newLevelProgress = updatedProgress;
       }
-      console.log('New level progress:', { completed: newCompleted, total: newTotal });
-      return { groupIndex: newGroupIndex, levelProgress: { completed: newCompleted, total: newTotal } };
+      return { 
+        groupIndex: newGroupIndex, 
+        levelProgress: newLevelProgress
+      };
     }
     return null;
   }
@@ -79,6 +102,9 @@ const gameSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    incrementLevelProgress: (state) => {
+      state.levelProgress.completed += 1;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -104,14 +130,15 @@ const gameSlice = createSlice({
         state.isLoading = false;
         state.error = action.error.message || 'Failed to initialize game';
       })
-      .addCase(updateScore.pending, (state) => {
-        state.error = null;
-      })
       .addCase(updateScore.fulfilled, (state, action) => {
-        if (action.payload) {
+        if (action.payload.isCorrect) {
           state.correctCount++;
           state.progressCount++;
           state.remainingConcepts.shift();
+          if (state.correctCount === 5) {
+            // Incrementar el progreso del nivel cuando se completa un grupo
+            state.levelProgress.completed += 1;
+          }
         } else {
           const [incorrectConcept, ...rest] = state.remainingConcepts;
           state.remainingConcepts = [...rest, incorrectConcept];
@@ -121,9 +148,6 @@ const gameSlice = createSlice({
       })
       .addCase(updateScore.rejected, (state, action) => {
         state.error = action.error.message || 'Failed to update score';
-      })
-      .addCase(nextGroup.pending, (state) => {
-        state.error = null;
       })
       .addCase(nextGroup.fulfilled, (state, action) => {
         if (action.payload !== null) {
@@ -135,6 +159,7 @@ const gameSlice = createSlice({
           state.progressCount = 0;
           state.hasStartedCounting = false;
           state.starColorIndex = (state.starColorIndex + 1) % 5;
+          // Mantener el progreso del nivel actual
           state.levelProgress = action.payload.levelProgress;
         } else {
           // Handle game completion
@@ -149,6 +174,6 @@ const gameSlice = createSlice({
   },
 });
 
-export const { setLevel, clearError } = gameSlice.actions;
+export const { setLevel, clearError, incrementLevelProgress } = gameSlice.actions;
 
 export default gameSlice.reducer;

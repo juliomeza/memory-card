@@ -1,12 +1,16 @@
-// src/components/
-
-import React, { useState } from 'react';
-import { Button, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
-import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import React, { useEffect, useRef, useState } from 'react';
+import { Button, Dialog, DialogTitle, DialogContent } from '@mui/material';
+import { getAuth } from 'firebase/auth';
+import * as firebaseui from 'firebaseui';
+import 'firebaseui/dist/firebaseui.css';
+import { useDispatch } from 'react-redux';
+import { setUser } from '../redux/slices/authSlice';
 
 const LoginButton = () => {
   const [open, setOpen] = useState(false);
+  const [isUIRendered, setIsUIRendered] = useState(false);
+  const uiRef = useRef(null);
+  const dispatch = useDispatch();
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -14,17 +18,46 @@ const LoginButton = () => {
 
   const handleClose = () => {
     setOpen(false);
+    setIsUIRendered(false);
   };
 
-  const handleGoogleSignIn = async () => {
-    const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      handleClose();
-    } catch (error) {
-      console.error("Error during Google sign in:", error);
+  useEffect(() => {
+    if (open) {
+      setIsUIRendered(true);
     }
-  };
+  }, [open]);
+
+  useEffect(() => {
+    if (open && isUIRendered && !uiRef.current) {
+      const auth = getAuth();
+      uiRef.current = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(auth);
+      uiRef.current.start('#firebaseui-auth-container', {
+        signInOptions: [
+          {
+            provider: 'google.com',
+            customParameters: {
+              prompt: 'select_account'
+            }
+          },
+          'password'
+        ],
+        signInFlow: 'popup',
+        callbacks: {
+          signInSuccessWithAuthResult: (authResult) => {
+            dispatch(setUser({
+              uid: authResult.user.uid,
+              email: authResult.user.email,
+              displayName: authResult.user.displayName,
+              photoURL: authResult.user.photoURL,
+              isAnonymous: authResult.user.isAnonymous,
+            }));
+            handleClose();
+            return false; // Prevent redirect
+          },
+        },
+      });
+    }
+  }, [open, isUIRendered, dispatch]);
 
   return (
     <>
@@ -34,13 +67,8 @@ const LoginButton = () => {
       <Dialog open={open} onClose={handleClose}>
         <DialogTitle>Log In</DialogTitle>
         <DialogContent>
-          <Button onClick={handleGoogleSignIn} fullWidth variant="contained" sx={{ mt: 2 }}>
-            Log in with Google
-          </Button>
+          <div id="firebaseui-auth-container"></div>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-        </DialogActions>
       </Dialog>
     </>
   );
