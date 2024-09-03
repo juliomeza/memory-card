@@ -1,0 +1,22 @@
+graph TD
+    A[App.js] --> B[Header.js]
+    A --> C[MemoryCardGame.js]
+    A --> D[GroupSummary.js]
+    A --> E[EmptyState.js]
+    
+    C --> F[ConceptCard.js]
+    C --> G[GameControls.js]
+    
+    H[Redux Store] --> I[authSlice.js]
+    H --> J[gameSlice.js]
+    
+    K[Firebase] --> L[Authentication]
+    K --> M[Firestore]
+    
+    N[Services] --> O[gameService.js]
+    N --> P[userProgressManager.js]
+    N --> Q[spacedRepetition.js]
+    
+    R[Hooks] --> S[useConcepts.js]
+    
+    T[Styles] --> U[appTheme.js]
