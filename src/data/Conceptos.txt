@@ -1,9 +1,12 @@
 # Data: Types
 
-## Fundamental Definition
+## Basics
 * Data type: An attribute that describes a piece of data based on its values, its programming language, or the operations it can perform
+* Open data: Data that is available to the public
+* Observation: The attributes that describe a piece of data contained in a row of a table
+* Record: A collection of related data in a data table, usually synonymous with row
 
-## Basic Data Types
+## Data Types
 * Qualitative data: A subjective and explanatory measure of a quality or characteristic
 * Quantitative data: A specific and objective measure, such as a number, quantity, or range
 
@@ -35,15 +38,12 @@
 * Dataset: A collection of data that can be manipulated or analyzed as one unit
 * Database: A collection of data stored in a computer system
 
-## Data Components
-* Observation: The attributes that describe a piece of data contained in a row of a table
-* Record: A collection of related data in a data table, usually synonymous with row
-
 ## Metadata
 * Metadata: Data about data
 * Administrative metadata: Metadata that indicates the technical source of a digital asset
 * Structural metadata: Metadata that indicates how a piece of data is organized and whether it is part of one or more than one data collection
 * Descriptive metadata: Metadata that describes a piece of data and can be used to identify it at a later point in time
+* Metadata repository: A database created to store metadata
 
 ## Data Sources
 * First-party data: Data collected by an individual or group using their own resources
@@ -58,18 +58,14 @@
 * Live data: Data that is automatically updated
 * Static data: Data that doesn't change once it has been recorded
 
-## Data Accessibility
-* Open data: Data that is available to the public
-
 ## Data Components and Structures
 * Data element: A piece of information in a dataset
 * Data frame: A collection of columns containing data, similar to a spreadsheet or SQL table
-* Data range: Numerical values that fall between predefined maximum and minimum values
 * Data interoperability: The ability to integrate data from multiple sources and a key factor leading to the successful use of open data among companies and governments
 
 # Data: Ethics
 
-## Fundamental Concepts
+## Basics
 * Data ethics: Well-founded standards of right and wrong that dictate how data is collected, shared, and used
 * Ethics: Well-founded standards of right and wrong that prescribe what humans ought to do, usually in terms of rights, obligations, benefits to society, fairness, or specific virtues
 
@@ -87,24 +83,22 @@
 * Data governance: A process for ensuring the formal management of a company's data assets
 * Data security: Protecting data from unauthorized access or corruption by adopting safety measures
 * Data anonymization: The process of protecting people's private or sensitive data by eliminating identifying information
-
-## Financial Considerations
 * Currency: The aspect of data ethics that presumes individuals should be aware of financial transactions resulting from the use of their personal data and the scale of those transactions
 
 ## Bias and Fairness
 * Data bias: When a preference in favor of or against a person, group of people, or thing systematically skews data analysis results in a certain direction
 * Sampling bias: Overrepresenting or underrepresenting certain members of a population as a result of working with a sample that is not representative of the population as a whole
 
-## Regulatory Frameworks
-* General Data Protection Regulation of the European Union (GDPR): Policy-making body in the European Union created to help protect people and their data
-
 # Data: Quality
 
-## Key Dimensions of Data Quality
+## Basics
 * Accuracy: The degree to which data conforms to the actual entity being measured or described
 * Completeness: The degree to which data contains all desired components or measures
 * Consistency: The degree to which data is repeatable from different points of entry or collection
 * Validity: The degree to which data conforms to constraints when it is input, collected, or created
+* Data integrity: The accuracy, completeness, consistency, and trustworthiness of data throughout its life cycle
+* Verification: A process to confirm that a data-cleaning effort was well executed and the resulting data is accurate and reliable
+* Null: An indication that a value does not exist in a dataset
 
 ## Data Cleanliness
 * Clean data: Data that is complete, correct, and relevant to the problem being solved
@@ -117,9 +111,6 @@
 * Duplicate data: Any record that inadvertently shares data with another record
 * Outdated data: Any data that has been superseded by newer and more accurate information
 
-## Data Integrity
-   - Data integrity: The accuracy, completeness, consistency, and trustworthiness of data throughout its life cycle
-
 ## Data Validation
 * Data validation: A tool for checking the accuracy and quality of data
 * Data validation process: The process of checking and rechecking the quality of data so that it is complete, accurate, secure and consistent
@@ -128,22 +119,15 @@
 * Data constraints: The criteria that determine whether a piece of a data is clean and valid
 * Cross-field validation: A process that ensures certain conditions for multiple data fields are satisfied
 
-## Verification
-* Verification: A process to confirm that a data-cleaning effort was well executed and the resulting data is accurate and reliable
-
-## Data Quality Issues 
-* Null: An indication that a value does not exist in a dataset
-* Data bias: When a preference in favor of or against a person, group of people, or thing systematically skews data analysis results in a certain direction
-* Sampling bias: Overrepresenting or underrepresenting certain members of a population as a result of working with a sample that is not representative of the population as a whole
-
 # Foundations: Basics
 
-## Data Fundamentals
+## Basics
 * Data: A collection of facts
 * Data analysis: The collection, transformation, and organization of data in order to draw conclusions, make predictions, and drive informed decision-making
 * Data analyst: Someone who collects, transforms, and organizes data in order to draw conclusions, make predictions, and drive informed decision-making
 * Data analytics: The science of data
 * Data science: A field of study that uses raw data to create new ways of modeling and understanding the unknown 
+* Data analysis process: The six phases of ask, prepare, process, analyze, share, and act whose purpose is to gain insights that drive informed decision-making.
 
 ## Data Lifecycle and Ecosystem
 * Data life cycle: The sequence of stages that data experiences, which include plan, capture, manage, analyze, archive, and destroy
@@ -159,9 +143,6 @@
 * Data structure: A format for organizing and storing data
 * Data transfer: The process of copying data from a storage device to computer memory or from one computer to another
 
-## Data Analysis Process
-* Data analysis process: The six phases of ask, prepare, process, analyze, share, and act whose purpose is to gain insights that drive informed decision-making.
-
 ## Professional Skills and Development
 * Soft skills: Nontechnical traits and behaviors that relate to how people work
 * Transferable skills: Skills and qualities that can transfer from one job or industry to another
@@ -169,12 +150,6 @@
 * Portfolio: A collection of materials that can be shared with potential employers
 * Mentor: Someone who shares knowledge, skills, and experience to help another grow both professionally and personally
 * Sponsor: A professional advocate who is committed to moving forward the career of another 
-
-## Stakeholders and Projects
-* Stakeholders: People who invest time and resources into a project and are interested in its outcome
-
-## Specialized Roles
-* Data warehousing specialist: A professional who develops processes and procedures to effectively store and organize data
 
 # Foundations: Methods
 
@@ -213,23 +188,20 @@
 * Correlation: The measure of the degree to which two variables change in relationship to each other
 * Causation: When an action directly leads to an outcome, such as a cause-effect relationship
 
-## Algorithms and Processes
-* Algorithm: A process or set of rules followed for a specific task
-
 ## Context and Perspective
 * Context: The condition in which something exists or happens
 * Relativity: The process of considering observations in relation or proportion to something else
 
-## Organizational Changes"
-* Merger: An agreement that unites two organizations into a single new one
-
 # Foundations: Tools
 
-## Basic Data Concepts
+## Basics
 * Attribute: A characteristic or quality of data used to label a column in a table
 * Matrix: A two-dimensional collection of data elements with rows and columns
 * Schema: A way of describing how something, such as data, is organized
 * Unique: A value that can’t have a duplicate
+* Relational database: A database that contains a series of tables that can be connected to form relationships
+* Log file: A computer-generated file that records events from operating systems and other software programs
+* Naming conventions: Consistent guidelines that describe the content, creation date, and version of a file in its name
 
 ## Operators and Expressions
 * Arithmetic operator: An operator used to perform basic math operations such as addition, subtraction, multiplication, and division
@@ -244,10 +216,6 @@
 * Programming language: A system of words and symbols used to write instructions that computers follow
 * Open-source: Code that is freely available and may be modified and shared by the people who use it
 * Nested: Code that performs a particular function and is contained within code that performs a broader function
-
-## Databases
-* Relational database: A database that contains a series of tables that can be connected to form relationships
-* Log file: A computer-generated file that records events from operating systems and other software programs
 
 ## Data Quality and Management
 * Bad data source: A data source that is not reliable, original, comprehensive, current, and cited (ROCCC) 
@@ -265,22 +233,15 @@
 * Population: In data analytics, all possible data values in a dataset
 * Sample: In data analytics, a segment of a population that is representative of the entire population
 
-## Organization and Nomenclature
-* Naming conventions: Consistent guidelines that describe the content, creation date, and version of a file in its name
-
 ## Business Concepts
 * Profit margin: A percentage that indicates how many cents of profit has been generated for each dollar of sale
 * Return on investment (ROI): A formula that uses the metrics of investment and profit to evaluate the success of an investment
 * Revenue: The total amount of income generated by the sale of goods or services 
 * Turnover rate: The rate at which employees voluntarily leave a company
 
-## Data Requirements
+## Others
 * Mandatory: A data value that cannot be left blank or empty
-
-## Data Aggregation
 * Aggregation: The process of collecting or gathering many separate pieces into a whole
-
-## Evaluation and Presentation
 * Case study: A common way for employers to assess job skills and gain insight into how a candidate approaches common data-related challenges
 * Framework: The context a presentation needs to create logical connections that tie back to the business task and metrics
 
@@ -300,40 +261,23 @@
 
 # Prepare
 
-##Data Storage and Management
+## Basics
+* Data aggregation: The process of gathering data from multiple sources and combining it into a single, summarized collection
+* Data blending: A Tableau method that combines data from multiple data sources customized for an audience
+* Data manipulation: The process of changing data to make it more organized and easier to read reliable infrastructure
+* Data mapping: The process of matching fields from one data source to another
+* Data merging: The process of combining two or more datasets into a single dataset
+* Data design: How information is organized
 * Cloud: A place to keep data online, rather than a computer hard drive
-
-## File Types and Formats
-* CSV (comma-separated values) file: A delimited text file that uses a comma to separate values
-* FWF (fixed-width file): A text file with a specific format, which enables the saving of textual data in an organized fashion
 
 ## Data Characteristics
 * Float: A number that contains a decimal
 * Length: The number of characters in a text string
 * Substring: A subset of a text string
 
-## Data Organization and Structure
-* Data design: How information is organized
-
-## Data Manipulation Techniques
-* Data aggregation: The process of gathering data from multiple sources and combining it into a single, summarized collection
-* Data blending: A Tableau method that combines data from multiple data sources customized for an audience
-* Data manipulation: The process of changing data to make it more organized and easier to read reliable infrastructure
-* Data mapping: The process of matching fields from one data source to another
-* Data merging: The process of combining two or more datasets into a single dataset
-
 ## Data Cleaning Functions
 * TRIM: A function that removes leading, trailing, and repeated spaces in data
 * Modulo: An operator (%) that returns the remainder when one number is divided by another
-
-## Data Analysis Tools and Concepts
-* Ranking: A system to position values of a dataset within a scale of achievement or status
-
-## Project Management
-* Agenda: A list of scheduled appointments 
-
-## Data Professionals
-* Data engineer: A professional who transforms data into a useful format for analysis and gives it a 
 
 ## Specialized Data Concepts
 * Delimiter: A character that indicates the beginning or end of a data item
@@ -360,14 +304,10 @@
 * Cluster: A collection of data points on a data visualization with similar values
 * Decision tree: A tool that helps analysts make decisions about critical features of a visualization
 
-## Data Summary and Synthesis
+## Others
 * Summary table: A table used to summarize statistical information about data
 * Spotlightling: Scanning through data to quickly identify the most important insights
-
-## Mathematical Calculations and Operations
 * Equation: A calculation that involves addition, subtraction, multiplication, or division (also called a math expression)
-
-## Root Cause Analysis
 * Root cause: The reason why a problem occurs
 
 # Data Visualization: Basics
@@ -390,12 +330,6 @@
 * Narrative: (Refer to Story)
 * Engagement: Capturing and holding someone’s interest and attention during a data presentation
 * Elevator pitch: A short statement describing an idea or concept
-
-## Visualization Tools
-* Tableau: A business intelligence and analytics platform that helps people visualize, understand, and make decisions with data
-
-## General Terms (for reference)
-* Visualization: (Refer to Data visualization) 
 
 # Data Visualization: Techniques
 
@@ -424,10 +358,8 @@
 * Unity: The design principle of using visual elements that complement each other to create aesthetic appeal and clarity in a data visualization
 * Variety: The design principle of using different kinds of visual elements in a data visualization to engage an audience
 
-## Color Techniques
+## Others
 * Diverging color palette: A color theme that displays two ranges of data values using two different hues, with color intensity representing the magnitude of the values
-
-## Presentation Methods
 * McCandless Method: A method for presenting data visualizations that moves from general to specific information
 
 # Data Visualization: Charts
@@ -466,10 +398,8 @@
 * Packed bubble chart: A data visualization that displays data in clustered circles
 * Circle view: A data visualization that shows comparative strength in data
 
-## Combined Visualizations
+## Others
 * Combo chart: A data visualization that combines more than one visualization type 
-
-## Related Concepts
 * Geolocation: The geographical location of a person or device by means of digital information
 
 # Excel
@@ -482,7 +412,6 @@
 * Cell reference: A cell or a range of cells in a worksheet typically used in formulas and functions
 * Array: A collection of values in spreadsheet cells
 * Text string: A group of characters within a cell, most often composed of letters
-* Borders: Lines that can be added around two or more cells on a spreadsheet
 
 ## Text Manipulation Functions
 * LEFT: A function that returns a set number of characters from the left side of a text string 
@@ -642,10 +571,8 @@
 * Code chunk: A piece of code added in an R Markdown file that is used to process, visualize or analyze data
 * Inline code: Code that can be inserted directly into the text of an R Markdown file
 
-## Data Import
+## Others
 * readr (R): An R package in Tidyverse used for importing data
-
-## Interactive Web Applications
 * Shiny (R): An R package used to build interactive web apps with R code
 
 # Others
@@ -667,6 +594,8 @@
 ## Data Formats
 * TSV (Tab-separated values file): A text file that stores a data table by separating columns of data with tabs
 * YAML: A language that translates data to improve readability
+* CSV (comma-separated values) file: A delimited text file that uses a comma to separate values
+* FWF (fixed-width file): A text file with a specific format, which enables the saving of textual data in an organized fashion
 * Text data type: A sequence of characters and punctuation that contains textual information (also called string data type)
 
 ## Multimedia 
@@ -685,17 +614,11 @@
 * Regular expression (RegEx): A rule that says the values in a table must match a prescribed pattern
 * Changelog: A file containing a chronologically ordered list of modifications made to a project
 
-## Mathematics and Data Analysis
+## Others 
 * Calculus: A branch of mathematics that involves the study of rates of change and the changes between values that are related by a function 
-* Metadata repository: A database created to store metadata
+* Stakeholders: People who invest time and resources into a project and are interested in its outcome
+* Data warehousing specialist: A professional who develops processes and procedures to effectively store and organize data
+* Algorithm: A process or set of rules followed for a specific task
 
-## Internet and Social Media
-* Social media: Websites and applications through which users create and share content or participate in social networking
-* Cookie: A small file stored on a computer that contains information about its users
 
-## Organizations and Agencies
-* United States Census Bureau: An agency in the U.S. Department of Commerce that serves as the nation’s leading provider of quality data about its people and economy
-* World Health Organization: An organization whose primary role is to direct and coordinate international health within the United Nations system
 
-## Design Elements
-* Underscores: Lines used to underline words and connect text characters
