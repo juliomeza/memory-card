@@ -619,6 +619,3 @@
 * Stakeholders: People who invest time and resources into a project and are interested in its outcome
 * Data warehousing specialist: A professional who develops processes and procedures to effectively store and organize data
 * Algorithm: A process or set of rules followed for a specific task
-
-
-
