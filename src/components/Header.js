@@ -4,14 +4,14 @@ import { AppBar, Toolbar, Box, IconButton, Menu, MenuItem, Typography } from '@m
 import MenuIcon from '@mui/icons-material/Menu';
 import LoginButton from './LoginButton';
 import LevelProgressBar from './LevelProgressBar';
-import { selectUser, selectIsAnonymous, selectLevelProgress } from '../redux/selectors';
+import { selectUser, selectIsAnonymous, selectCategoryProgress } from '../redux/selectors';
 import { signOutUser } from '../redux/slices/authSlice';
 
 const Header = () => {
   const dispatch = useDispatch();
   const user = useSelector(selectUser);
   const isAnonymous = useSelector(selectIsAnonymous);
-  const levelProgress = useSelector(selectLevelProgress);
+  const categoryProgress = useSelector(selectCategoryProgress);
   const [anchorEl, setAnchorEl] = useState(null);
 
   const getFirstName = (fullName) => {
@@ -48,8 +48,8 @@ const Header = () => {
         </IconButton>
         <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center' }}>
           <LevelProgressBar 
-            totalSegments={levelProgress.total} 
-            completedSegments={levelProgress.completed} 
+            totalSegments={categoryProgress?.total || 0} 
+            completedSegments={categoryProgress?.completed || 0} 
           />
         </Box>
         {!isAnonymous && user && (

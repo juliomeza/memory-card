@@ -78,14 +78,29 @@ export const selectLevelProgress = createSelector(
   game => game.levelProgress
 );
 
+export const selectCategory = createSelector(
+  [selectGame],
+  game => game.category
+);
+
+export const selectCategories = createSelector(
+  [selectGame],
+  game => game.categories
+);
+
+export const selectCategoryProgress = createSelector(
+  [selectGame],
+  game => game.categoryProgress
+);
+
 // Selector combinado para todos los datos del juego necesarios
 export const selectGameData = createSelector(
-  [selectLevel, selectCurrentGroup, selectShowGroupSummary, selectCorrectCount, 
+  [selectCategory, selectCurrentGroup, selectShowGroupSummary, selectCorrectCount, 
    selectRemainingConcepts, selectHasStartedCounting, selectProgressCount, 
-   selectStarColorIndex, selectIsGameLoading, selectLevelProgress],
-  (level, currentGroup, showGroupSummary, correctCount, remainingConcepts, 
-   hasStartedCounting, progressCount, starColorIndex, isLoading, levelProgress) => ({
-    level,
+   selectStarColorIndex, selectIsGameLoading, selectCategoryProgress],
+  (category, currentGroup, showGroupSummary, correctCount, remainingConcepts, 
+   hasStartedCounting, progressCount, starColorIndex, isLoading, categoryProgress) => ({
+    category,
     currentGroup,
     showGroupSummary,
     correctCount,
@@ -94,6 +109,6 @@ export const selectGameData = createSelector(
     progressCount,
     starColorIndex,
     isLoading,
-    levelProgress
+    categoryProgress
   })
 );

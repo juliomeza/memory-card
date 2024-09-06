@@ -5,15 +5,14 @@ import { db } from './firebase';
 import { getUserProgress } from './userProgressManager';
 import { getPriority } from './spacedRepetition';
 
-export const getConceptsForReview = async (userId, level) => {
+export const getConceptsForReview = async (userId, category) => {
   try {
     if (!userId) {
-      console.log('No user ID provided, returning all concepts for the level');
+      console.log('No user ID provided, returning all concepts for the category');
       const conceptsRef = collection(db, 'concepts');
       const conceptsQuery = query(
         conceptsRef, 
-        where("level", ">=", level),
-        where("level", "<", level + 1000)
+        where("group", "==", category) // Filtrar por 'group' en lugar de 'level'
       );
       const conceptsSnapshot = await getDocs(conceptsQuery);
       return conceptsSnapshot.docs.map(doc => ({
@@ -26,8 +25,7 @@ export const getConceptsForReview = async (userId, level) => {
     const conceptsRef = collection(db, 'concepts');
     const conceptsQuery = query(
       conceptsRef, 
-      where("level", ">=", level),
-      where("level", "<", level + 1000)
+      where("group", "==", category) // Filtrar por 'group' en lugar de 'level'
     );
 
     const conceptsSnapshot = await getDocs(conceptsQuery);
@@ -63,5 +61,24 @@ export const getConceptsForReview = async (userId, level) => {
   } catch (error) {
     console.error("Error getting concepts for review:", error);
     return []; // Return an empty array instead of throwing an error
+  }
+};
+
+export const getAllCategories = async () => {
+  try {
+    const conceptsRef = collection(db, 'concepts');
+    const conceptsSnapshot = await getDocs(conceptsRef);
+    const categories = new Set();
+    conceptsSnapshot.docs.forEach(doc => {
+      categories.add(doc.data().group);
+    });
+    return Array.from(categories).sort((a, b) => {
+      const aNum = parseInt(a.split('|')[0]);
+      const bNum = parseInt(b.split('|')[0]);
+      return aNum - bNum;
+    });
+  } catch (error) {
+    console.error("Error getting categories:", error);
+    return [];
   }
 };

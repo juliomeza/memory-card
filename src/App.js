@@ -9,13 +9,15 @@ import GroupSummary from './components/GroupSummary';
 import EmptyState from './components/EmptyState';
 import appTheme from './styles/appTheme';
 import { initializeAuth, signOutUser } from './redux/slices/authSlice';
-import { initializeGame, setLevel, updateScore, nextGroup, clearError } from './redux/slices/gameSlice';
+import { initializeGame, setCategory, updateScore, nextGroup, clearError, setCategories } from './redux/slices/gameSlice';
+import { getAllCategories } from './services/gameService';
 import { 
   selectUser, 
   selectIsAnonymous, 
   selectIsAuthLoading, 
   selectAuthError,
-  selectGameData
+  selectGameData,
+  selectCategories
 } from './redux/selectors';
 
 const App = () => {
@@ -25,9 +27,10 @@ const App = () => {
   const isAuthLoading = useSelector(selectIsAuthLoading);
   const authError = useSelector(selectAuthError);
   const gameData = useSelector(selectGameData);
+  const categories = useSelector(selectCategories) || [];
 
   const { 
-    level, 
+    category, 
     currentGroup, 
     showGroupSummary, 
     correctCount, 
@@ -36,7 +39,7 @@ const App = () => {
     progressCount,
     starColorIndex,
     isLoading: isGameLoading,
-    levelProgress,
+    categoryProgress,
     error: gameError
   } = gameData;
 
@@ -47,19 +50,35 @@ const App = () => {
   }, [dispatch, user]);
 
   useEffect(() => {
-    if (user && (!remainingConcepts || remainingConcepts.length === 0) && !showGroupSummary) {
-      dispatch(initializeGame({ userId: user.uid, level }));
+    if (user && category && remainingConcepts?.length === 0 && !showGroupSummary) {
+      dispatch(initializeGame({ userId: user.uid, category }));
     }
-  }, [dispatch, user, level, remainingConcepts, showGroupSummary]);
+  }, [dispatch, user, category, remainingConcepts?.length, showGroupSummary]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const fetchedCategories = await getAllCategories();
+        dispatch(setCategories(fetchedCategories));
+        if (fetchedCategories.length > 0 && !category) {
+          dispatch(setCategory(fetchedCategories[0]));
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        dispatch(setCategories([]));
+      }
+    };
+    fetchCategories();
+  }, [dispatch, category]);
 
   const handleSignOut = () => {
     dispatch(signOutUser());
   };
 
-  const handleLevelChange = (event) => {
-    const newLevel = event.target.value;
-    dispatch(setLevel(newLevel));
-    dispatch(initializeGame({ userId: user?.uid, level: newLevel }));
+  const handleCategoryChange = (event) => {
+    const newCategory = event.target.value;
+    dispatch(setCategory(newCategory));
+    dispatch(initializeGame({ userId: user?.uid, category: newCategory }));
   };
 
   const handleScoreUpdate = (remembered) => {
@@ -73,7 +92,7 @@ const App = () => {
   };
 
   const handleNextGroup = () => {
-    dispatch(nextGroup({ userId: user?.uid, level }));
+    dispatch(nextGroup({ userId: user?.uid, category }));
   };
 
   const handleCloseError = (event, reason) => {
@@ -101,7 +120,7 @@ const App = () => {
             user={user} 
             onSignOut={handleSignOut} 
             isAnonymous={isAnonymous}
-            levelProgress={levelProgress}
+            categoryProgress={categoryProgress}
           />
           <Container maxWidth="sm" sx={{ mt: 4, flexGrow: 1 }}>
             {authError ? (
@@ -110,15 +129,18 @@ const App = () => {
               <>
                 <Box display="flex" justifyContent="center" alignItems="center" mb={2}>
                   <Select
-                    value={level}
-                    onChange={handleLevelChange}
+                    value={category}
+                    onChange={handleCategoryChange}
                     displayEmpty
-                    inputProps={{ 'aria-label': 'Select level' }}
+                    inputProps={{ 'aria-label': 'Select category' }}
                   >
-                    <MenuItem value={1000}>Level 1000</MenuItem>
-                    <MenuItem value={2000}>Level 2000</MenuItem>
-                    <MenuItem value={3000}>Level 3000</MenuItem>
-                    <MenuItem value={4000}>Level 4000</MenuItem>
+                    {categories && categories.length > 0 ? (
+                      categories.map((cat) => (
+                        <MenuItem key={cat} value={cat}>{cat}</MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem value="">No categories available</MenuItem>
+                    )}
                   </Select>
                 </Box>
                 {showGroupSummary ? (

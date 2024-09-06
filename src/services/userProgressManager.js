@@ -12,7 +12,7 @@ export const initializeUserProgress = async (userId) => {
         totalAttempts: 0,
         correctAttempts: 0,
         conceptProgress: {},
-        levelProgress: {}
+        categoryProgress: {}
       });
       console.log('User progress initialized successfully');
     }
@@ -68,25 +68,25 @@ export const updateUserProgress = async (userId, conceptId, isCorrect) => {
 };
 
 // Update level progress
-export const updateLevelProgress = async (userId, level, completed, total) => {
+export const updateCategoryProgress = async (userId, category, completed, total) => {
   try {
     const userProgressRef = doc(db, 'userProgress', userId);
     const userProgressDoc = await getDoc(userProgressRef);
-    const currentLevelProgress = userProgressDoc.data()?.levelProgress?.[level] || { completed: 0, total: 0 };
+    const currentCategoryProgress = userProgressDoc.data()?.categoryProgress?.[category] || { completed: 0, total: 0 };
 
     // Solo actualiza 'completed' si es mayor que el valor actual
-    const newCompleted = Math.max(currentLevelProgress.completed, completed);
+    const newCompleted = Math.max(currentCategoryProgress.completed, completed);
     // Solo actualiza 'total' si es mayor que el valor actual y no es 0
-    const newTotal = total > currentLevelProgress.total ? total : currentLevelProgress.total;
+    const newTotal = total > currentCategoryProgress.total ? total : currentCategoryProgress.total;
 
     await updateDoc(userProgressRef, {
-      [`levelProgress.${level}`]: { completed: newCompleted, total: newTotal }
+      [`categoryProgress.${category}`]: { completed: newCompleted, total: newTotal }
     });
 
-    console.log(`Level progress updated: Level ${level}, Completed: ${newCompleted}, Total: ${newTotal}`);
+    console.log(`Category progress updated: Category ${category}, Completed: ${newCompleted}, Total: ${newTotal}`);
     return { completed: newCompleted, total: newTotal };
   } catch (error) {
-    console.error('Error updating level progress:', error);
+    console.error('Error updating category progress:', error);
     throw error;
   }
 };
@@ -113,13 +113,13 @@ export const getUserProgress = async (userId) => {
   }
 };
 
-// Get level progress for a specific level
-export const getLevelProgress = async (userId, level) => {
+// Get category progress for a specific category
+export const getCategoryProgress = async (userId, category) => {
   try {
     const userProgress = await getUserProgress(userId);
-    return userProgress?.levelProgress?.[level] || { completed: 0, total: 0 };
+    return userProgress?.categoryProgress?.[category] || { completed: 0, total: 0 };
   } catch (error) {
-    console.error('Error getting level progress:', error);
+    console.error('Error getting category progress:', error);
     throw error;
   }
 };

@@ -5,14 +5,13 @@ import { db } from './firebase';
 import { getUserProgress } from './userProgressManager';
 import { getPriority } from './spacedRepetition';
 
-export const getConceptsForReview = async (userId, level) => {
+export const getConceptsForReview = async (userId, category) => {
   try {
     const userProgress = await getUserProgress(userId);
     const conceptsRef = collection(db, 'concepts');
     const conceptsQuery = query(
       conceptsRef, 
-      where("level", ">=", level),
-      where("level", "<", level + 1000)
+      where("group", "==", category)
     );
 
     const conceptsSnapshot = await getDocs(conceptsQuery);
